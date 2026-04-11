@@ -1,7 +1,6 @@
 
-
+import {Link} from "react-router-dom"
 function App() {
-  
 
   return (
     <div dir="rtl">
@@ -19,6 +18,12 @@ function App() {
           <h2 className="text-3xl font-bold text-blue-900 mb-4">איך אנחנו עוזרים לכם?</h2> 
           <p className="text-blue-800 text-lg leading-relaxed">
 בעזרת חני-טיק תוכלו למצוא חנייה קרובה בקלות ובמהירות, עם עדכונים בזמן אמת על זמינות החניות.          </p>
+        </div>
+
+        <div>
+          <Link to="/parking">
+            למציאת חניה
+          </Link>
         </div>
 
       </div>
