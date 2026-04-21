@@ -42,7 +42,7 @@ router.get('/city', (req, res) => {
             spots: lotSpots.map(spot => ({
                 spot: spot.spotNumber,
                 floor: spot.floor,
-                isOccupied: spot.isOccupied,
+                status: spot.isOccupied,
                 type: spot.type
             }))
         };
