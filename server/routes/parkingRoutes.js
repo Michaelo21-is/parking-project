@@ -14,12 +14,12 @@ const parkingLots = [
 ];
 
 const spots = [
-    { id: "s1", floor: 1, lotId: "L10", spotNumber: 1, isOccupied: false },
-    { id: "s2", floor: 1, lotId: "L10", spotNumber: 2, isOccupied: true },
-    { id: "s3", floor: 1, lotId: "L10", spotNumber: 3, isOccupied: false },
-    { id: "s4", floor: 1, lotId: "L20", spotNumber: 1, isOccupied: true },
-    { id: "s5", floor: 2, lotId: "L20", spotNumber: 2, isOccupied: false },
-    { id: "s6", floor: 2, lotId: "L20", spotNumber: 3, isOccupied: true }
+    { id: "s1", floor: 1, lotId: "L10", spotNumber: 1, isOccupied: false, type: "normal" },
+    { id: "s2", floor: 1, lotId: "L10", spotNumber: 2, isOccupied: true, type: "disabled" },
+    { id: "s3", floor: 1, lotId: "L10", spotNumber: 3, isOccupied: false, type: "dean" },
+    { id: "s4", floor: 1, lotId: "L20", spotNumber: 1, isOccupied: true, type: "normal" },
+    { id: "s5", floor: 2, lotId: "L20", spotNumber: 2, isOccupied: false, type: "normal" },
+    { id: "s6", floor: 2, lotId: "L20", spotNumber: 3, isOccupied: true, type: "disabled" }
 ];
 
 router.get('/city', (req, res) => {
@@ -42,7 +42,8 @@ router.get('/city', (req, res) => {
             spots: lotSpots.map(spot => ({
                 spot: spot.spotNumber,
                 floor: spot.floor,
-                isOccupied: spot.isOccupied
+                isOccupied: spot.isOccupied,
+                type: spot.type
             }))
         };
     });
