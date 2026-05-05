@@ -1,83 +1,106 @@
 import { useEffect, useState } from "react";
-import parkingData from "./data/mockData.json";
-
+import axios from 'axios'
 function Parking() {
   const [normalParkingNum, setNormalParkingNum] = useState(0);
   const [disableParkingNum, setDisableParkingNum] = useState(0);
   const [deanParkingNum, setDeanParkingNum] = useState(0);
+  const [cityName, setCityName] = useState("");
+  const [searchCityName, setSearchCityName] =useState("");  
   const [parkName, setParkName] = useState("");
   const [searchParkName, setSearchParkName] = useState("");
 
   const validParkingName = ["חניון חולון", "חניון תל אביב", "חניון חיפה"];
 
   useEffect(() => {
-    loadParkingData("חניון חולון");
+    loadParkingData("חולון", "חניון HIT");
   }, []);
 
-  function checkIfParkingNameValid(name) {
-    return validParkingName.includes(name);
-  }
+  
 
-  function loadParkingData(name) {
-    const selectedParking = parkingData.find(
-      (parking) => parking.parkingName === name
-    );
+  async function loadParkingData(searchCityName, searchParkName) {
+    try{
+      const response = await axios.get("http://localhost:3000/parking/lot",
+        {params:{
+          cityName: searchCityName,
+          lotName: searchParkName,
+        }}
+      );
+      const responseData = await response.data;
+      let normal = 0;
+      let disable = 0;
+      let dean = 0;
 
-    if (!selectedParking) {
-      alert("חניון לא קיים");
-      return;
-    }
+      for (let i = 0; i < responseData.spots.length; i++) {
+        const spot = responseData.spots[i];
 
-    let normal = 0;
-    let disable = 0;
-    let dean = 0;
-
-    for (let i = 0; i < selectedParking.spots.length; i++) {
-      const spot = selectedParking.spots[i];
-
-      if (spot.status === true) {
-        switch (spot.type) {
-          case "normal":
-            normal++;
-            break;
-          case "disable":
-            disable++;
-            break;
-          case "dean":
-            dean++;
-            break;
-          default:
-            break;
+        if (spot.status === true) {
+          switch (spot.type) {
+            case "normal":
+              normal++;
+              break;
+            case "disable":
+              disable++;
+              break;
+            case "dean":
+              dean++;
+              break;
+            default:
+              break;
+          }
         }
       }
-    }
 
-    setParkName(name);
-    setNormalParkingNum(normal);
-    setDisableParkingNum(disable);
-    setDeanParkingNum(dean);
+      setParkName(searchParkName);
+      setCityName(searchCityName);
+      setNormalParkingNum(normal);
+      setDisableParkingNum(disable);
+      setDeanParkingNum(dean);
+      }
+      catch(e){
+        const erorrMessage = e.response.data.error
+        console.log("printing the error maseege",erorrMessage)
+        if(erorrMessage === "City not found"){
+          alert("השם של העיר לא רשום נכון");
+          return;
+          }
+        if(erorrMessage === "Parking lot not found in the specified city"){
+          alert("השם של החניון לא רשום נכון")
+          return
+        }
+        alert("משהו לא עבד טוב בשרת בבקשה תבצע את הפעולה עוד פעם");
+        console.log("something went bad, error maseege, ", e);        
+      }
+    
+
+    
   }
 
   function handleOnSubmit() {
-    if (!checkIfParkingNameValid(searchParkName)) {
-      alert("not existing park");
-      return;
-    }
-
-    loadParkingData(searchParkName);
+    loadParkingData(searchCityName, searchParkName);
   }
 
   return (
-    <div className="rounded-lg p-4">
-      <div className="mb-4 flex justify-center">
+    <div className="rounded-lg p-4 mt-20">
+      <div className="mb-5 flex justify-center ">
         <div className="relative w-full max-w-2xl">
-          <input
-            type="text"
-            placeholder="חיפוש"
-            value={searchParkName}
-            onChange={(e) => setSearchParkName(e.target.value)}
-            className="w-full border border-gray-300 rounded p-2 pr-10 text-right"
-          />
+          <div className="flex flex-row">
+            <input
+              type="text"
+              placeholder="שם של החניון"
+              dir="rtl"
+              value={searchParkName}
+              onChange={(e) => setSearchParkName(e.target.value)}
+              className="w-full border border-gray-300 rounded p-2 pr-10 text-right"
+            />
+            <input
+              type="text"
+              dir="rtl"
+              placeholder="עיר"
+              value={searchCityName}
+              onChange={(e) => setSearchCityName(e.target.value)}
+              className="w-full border border-gray-300 rounded p-2 pr-10 text-right"
+            />
+           </div> 
           <button
             type="button"
             className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200"
@@ -101,16 +124,16 @@ function Parking() {
         </div>
       </div>
 
-      <h2 className="text-2xl font-bold text-center mb-4">{parkName}</h2>
+      <h2 className="text-2xl font-bold text-center mb-4">{parkName}, {cityName}</h2>
       <p className="text-gray-600 text-center mb-6">מספר חניות פנויות:</p>
 
       <div className="flex justify-center gap-8">
-        <div className="w-40 h-40 rounded-full border-2 border-gray-400 bg-green-100 flex flex-col items-center justify-center">
-          <span className="text-lg">שמור</span>
+        <div className="w-40 h-40 rounded-full border-2 border-gray-400  flex flex-col items-center justify-center">
+          <span className="text-lg">דיקן</span>
           <span className="text-3xl font-bold">{deanParkingNum}</span>
         </div>
 
-        <div className="w-40 h-40 rounded-full border-2 border-gray-400 bg-white flex flex-col items-center justify-center">
+        <div className="w-40 h-40 rounded-full border-2 border-gray-400 bg-green-100 flex flex-col items-center justify-center">
           <span className="text-lg">רגיל</span>
           <span className="text-3xl font-bold">{normalParkingNum}</span>
         </div>

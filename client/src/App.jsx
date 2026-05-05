@@ -21,7 +21,7 @@ function App() {
         </div>
 
         <div>
-          <Link to="/parking">
+          <Link to="/parking" className="p-4 bg-blue-500 font-semibold text-white text-md">
             למציאת חניה
           </Link>
         </div>
