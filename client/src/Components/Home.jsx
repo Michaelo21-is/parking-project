@@ -1,14 +1,15 @@
-
 import {Link} from "react-router-dom"
 import { useState } from "react";
 export default function App() {
   const [searchCityName, setSearchCityName] =useState("");
   const [parkingData, setParkingData] = useState({
-    cityName: "",
-    parkName: "",
-    normalParkingNum: 0,
-    disableParkingNum: 0,
-    deanParkingNum: 0,
+    parkName: [],
+    floors: [],
+    spots:[{
+      status: false,
+      type: "",
+      floor: 0
+    }]
   });
   async function loadParkingData(searchCityName) {
     try{
@@ -18,6 +19,11 @@ export default function App() {
         }}
       );
       const responseData = await response.data;
+      setParkingData({
+        ...prev,
+        parkName: responseData.parkingName,
+        floors: responseData.floors,
+      });
       let normal = 0;
       let disable = 0;
       let dean = 0;
@@ -43,8 +49,6 @@ export default function App() {
       }
 
       setParkingData({
-        cityName: responseData.cityName,
-        parkName: responseData.parkName,
         normalParkingNum: normal,
         disableParkingNum: disable,
         deanParkingNum: dean
