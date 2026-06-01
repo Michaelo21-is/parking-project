@@ -1,14 +1,13 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { getParkingByCity } from "../api/LoadParkingApi";
+import { getParkingByCity } from "../api/LoadParkingByCityApi";
+import { Link } from 'react-router'
 
 export default function App() {
   const [searchCityName, setSearchCityName] = useState("");
   const [loading, setLoading] = useState(false);
-  const [location, setLocation] = useState({ latitude: null, longitude: null });
   const [error, setError] = useState(null);
   const GEOAPI = import.meta.env.VITE_GEO_CODING_API_KEY;
-
   const [parkingData, setParkingData] = useState({
     parkName: [],
     floors: [],
@@ -21,7 +20,7 @@ export default function App() {
     ]
   });
   // loading praking by city name
-  async function setParkingData(responseData) {
+  async function loadParkingByCityName(responseData) {
 
       let parkNameArray = [];
       let floorsArray = [];
@@ -69,7 +68,7 @@ export default function App() {
         }
       }
 
-      setParkingData({
+      loadParkingByCityName({
         parkName: parkNameArray,
         floors: floorsArray,
         spots: spotsArray,
@@ -84,7 +83,7 @@ export default function App() {
     setLoading(true);
     try{
       const responseData = await getParkingByCity(searchCityName);
-      setParkingData(responseData);
+      loadParkingByCityName(responseData);
 
     }
     catch (e) {
@@ -110,60 +109,83 @@ export default function App() {
     }  
 
   }
-  async function getStateByCoordinates(latitude, longitude) {
+ async function getStateByCoordinates(latitude, longitude) {
   try {
     const response = await axios.get(
-      "https://api.geoapify.com/v1/geocode/reverse",
+      "https://geocode.maps.co/reverse",
       {
         params: {
           lat: latitude,
           lon: longitude,
-          apiKey: GEOAPI,
+          api_key: GEOAPI,
+          format: "json"
         },
       }
     );
 
-    return response.data.features?.[0]?.properties?.state || null;
-    console.log("state:", state);
+    console.log("maps.co response:", response.data);
+
+    return response.data.address?.state || null;
   } catch (e) {
     console.log("Failed to load state", e);
+    console.log("status:", e.response?.status);
+    console.log("data:", e.response?.data);
+    return null;
   }
 }
-  useEffect( ()=> {
-    // Check if the browser supports the Geolocation API
-    if (!navigator.geolocation) {
-      setError('Geolocation is not supported by your browser.');
-      return;
-    }
+async function searchByState() {
+  if (!navigator.geolocation) {
+    setError("Geolocation is not supported by your browser.");
+    return;
+  }
 
-    // Success callback
-    const handleSuccess = (position) => {
-      setLocation({
-        latitude: position.coords.latitude,
-        longitude: position.coords.longitude,
-      });
-    };
+  navigator.geolocation.getCurrentPosition(
+    async (position) => {
+      const latitude = position.coords.latitude;
+      const longitude = position.coords.longitude;
 
-    // Error callback
-    const handleError = (err) => {
+
+      console.log("user latitude:", latitude);
+      console.log("user longitude:", longitude);
+
+      const state = await getStateByCoordinates(latitude, longitude);
+      console.log("state:", state);
+
+      // פה תעשה axios לבאק לפי state
+      // const responseData = await getParkingByState(state);
+      // setParkingData(...)
+    },
+    (err) => {
       setError(err.message);
-    };
+    },
+    {
+      enableHighAccuracy: true,
+      timeout: 5000,
+      maximumAge: 0,
+    }
+  );
+}
+  useEffect( ()=> {
+    searchByState();
 
-    // Request the current position
-    navigator.geolocation.getCurrentPosition(handleSuccess, handleError, {
-      enableHighAccuracy: true, // Forces the device to use GPS if available
-      timeout: 5000,            // Time allowed to fetch location
-      maximumAge: 0,            // Disables caching for a fresh reading
-    });
-    const state = await getStateByCoordinates(location.latitude, location.longitude);
-    // axios.get(get by state) function that set all and do the axios call
-    
   },[])
 
   return (
     <div dir="rtl">
       <div className="min-h-screen bg-white py-10">
-        <div className="max-w-4xl mx-auto px-6">
+        <Link className="absolute top-10 left-5 p-3 bg-slate-900
+        hover:bg-slate-700 text-white font-semibold text-xl rounded-2xl"
+        to={"/mangement"}
+        >
+            כניסה למורשים
+         </Link>
+         <Link className="absolute top-10 left-5 p-3 bg-slate-900
+        hover:bg-slate-700 text-white font-semibold text-xl rounded-2xl"
+        to={"/mangement"}
+        >
+           להתחברות
+         </Link>
+        <div className="max-w-4xl mx-auto px-6 mt-10">
           <div className="mb-12 mr-25">
             <h1 className="text-5xl font-bold text-black mb-4">
               חני-טיק : מערכת חניה חכמה

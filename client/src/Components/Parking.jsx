@@ -8,7 +8,7 @@ function Parking({parkingData}) {
   const [searchCityName, setSearchCityName] =useState("");  
   const [parkName, setParkName] = useState("");
   const [searchParkName, setSearchParkName] = useState("");
-
+  
   
 
   
