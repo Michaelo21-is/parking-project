@@ -1,15 +1,85 @@
-import {  useState } from "react";
+import { useState, useEffect } from "react";
+import { loadParkingDataByCityAndParkName } from "../api/LoadParkingDataByCityAndParkName";
 import axios from 'axios'
-function Parking({parkingData}) {
+function Parking() {
   const [normalParkingNum, setNormalParkingNum] = useState(0);
   const [disableParkingNum, setDisableParkingNum] = useState(0);
   const [deanParkingNum, setDeanParkingNum] = useState(0);
+  const [sumOfFloors, setSumOfFloor] = useState(0);
+  const [currentFloor, setCurrentFloor] = useState(null);
   const [cityName, setCityName] = useState("");
   const [searchCityName, setSearchCityName] =useState("");  
   const [parkName, setParkName] = useState("");
   const [searchParkName, setSearchParkName] = useState("");
-  
-  
+  const [loading, setLoading] = useState(false);
+
+  async function loadParkingData(){
+    try{
+      const responseData = await loadParkingDataByCityAndParkName(parkName, cityName);
+      let normal = 0;
+      let disable = 0;
+      let dean = 0;
+      setSumOfFloor(responseData.floors)
+
+      for (let i = 0; i < responseData.spots.length; i++) {
+        const spot = responseData.spots[i];
+
+        if (spot.status === true) {
+          switch (spot.type) {
+            case "normal":
+              normal++;
+              break;
+            case "disable":
+              disable++;
+              break;
+            case "dean":
+              dean++;
+              break;
+            default:
+              break;
+          }
+        }
+      }
+      setNormalParkingNum(normal);
+      setDisableParkingNum(disable);
+      setDeanParkingNum(dean);
+      }
+      catch(e){
+        const erorrMessage = e.response.data.error
+        console.log("printing the error maseege",erorrMessage)
+        if(erorrMessage === "City not found"){
+          alert("השם של העיר לא רשום נכון");
+          return;
+          }
+        if(erorrMessage === "Parking lot not found in the specified city"){
+          alert("השם של החניון לא רשום נכון")
+          return
+        }
+        alert("משהו לא עבד טוב בשרת בבקשה תבצע את הפעולה עוד פעם");
+        console.log("something went bad, error maseege, ", e);        
+      }
+  }
+  async function loadParkingData(){
+    setLoading(true)
+    const queryParms = new URLSearchParams(window.location.search);
+
+    const parkName = queryParms.get(`parkName`);
+    const cityName = queryParms.get(`cityName`);
+    const floor = queryParms.get(`floor`);
+    setParkName(parkName);
+    setCityName(cityName);
+    setfloor(currentFloor);
+    if(floor.isEmpty){
+      await loadParkingDataByCityAndParkName(cityName, parkName)
+    }
+    else{
+      // search it by floor num 
+    }
+    setLoading(false);
+  }
+  useEffect(() =>{
+    loadParkingData();
+  },[currentFloor])
 
   
 
