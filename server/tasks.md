@@ -17,13 +17,13 @@ Tracking doc. We work through it one task at a time. **(learn)** items are yours
 
 Create a model for each entity under `server/models/`:
 
-- [ ] **City** — city name, list of parking lots belonging to the city, list of authorized users
-- [ ] **ParkingLot** — name, city (ref to City), address, number of parking spots
-- [ ] **ParkingSpot** — belongs to a lot (ref to ParkingLot), status (free/occupied), which car is parked there (`null` for now if empty)
-- [ ] **ParkingSession** — car plate number, parking lot, spot, entry time, exit time, status (active / completed)
-- [ ] **Camera** — assigned parking lot (ref to ParkingLot), camera type (entry / exit), IP address
-- [ ] **User** — full name, email, password (hashed), the city they are authorized to update (ref to City)
-- [ ] Seed initial data into the DB: team members' usernames/emails + passwords
+- [x] **City** — city name, list of parking lots belonging to the city, list of authorized users
+- [x] **ParkingLot** — name, city (ref to City), address, number of parking spots
+- [x] **ParkingSpot** — belongs to a lot (ref to ParkingLot), status (free/occupied), which car is parked there (`null` for now if empty)
+- [x] **ParkingSession** — car plate number, parking lot, spot, entry time, exit time, status (active / completed)
+- [x] **Camera** — assigned parking lot (ref to ParkingLot), camera type (entry / exit), IP address
+- [x] **User** — full name, email, password (hashed), the city they are authorized to update (ref to City)
+- [x] Seed initial data into the DB: team members' usernames/emails + passwords
 
 > Note to reconcile with existing code: the current mock uses a boolean status (`isOccupied`),
 > while `loraService` expects the string `"free"`/`"occupied"`; and the spot type is `"normal"`
@@ -32,18 +32,18 @@ Create a model for each entity under `server/models/`:
 ## 3. CRUD endpoints
 
 - [ ] **(learn)** What is CRUD (Create / Read / Update / Delete)
-- [ ] Basic CRUD for ParkingLot (e.g. updating the spot count after renovation — from 100 to 30)
-- [ ] Wire the existing `/parking` routes to read from the DB instead of the mock arrays
-- [ ] Update `loraService.processData` to write the real spot status to the DB
+- [x] Basic CRUD for ParkingLot (e.g. updating the spot count after renovation — from 100 to 30)
+- [x] Wire the existing `/parking` routes to read from the DB instead of the mock arrays (+ added `GET /parking/district` search)
+- [x] Update `loraService.processData` to write the real spot status to the DB (Option A: payload carries `lotId`; finds existing spot and updates status; rejects unknown spots)
 
 ## 4. Authentication (JWT)
 
 - [ ] **(learn)** What is Middleware in the context of Authentication
 - [ ] **(learn)** What is JWT (JSON Web Token)
-- [ ] Install `jsonwebtoken` + `bcrypt` (for password hashing)
-- [ ] Signup/login endpoint that returns a JWT
-- [ ] Middleware that verifies the token and identifies the user on every protected request
-- [ ] Protect the CRUD endpoints so only an authorized user (per their city) can update spots
+- [x] Install `jsonwebtoken` + `bcrypt` (for password hashing)
+- [x] Signup/login endpoint that returns a JWT (`POST /auth/signup`, `POST /auth/login`)
+- [x] Middleware that verifies the token and identifies the user on every protected request (`middleware/auth.js`)
+- [x] Protect the CRUD endpoints so only an authorized user (per their city) can update spots
 
 ---
 

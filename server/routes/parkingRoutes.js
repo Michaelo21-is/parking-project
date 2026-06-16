@@ -1,90 +1,78 @@
 import express from 'express';
+import City from '../models/City.js';
+import ParkingLot from '../models/ParkingLot.js';
+import ParkingSpot from '../models/ParkingSpot.js';
 
 const router = express.Router();
 
-// Mock database
-const cities = [
-    { id: "c1", cityName: "תל אביב" },
-    { id: "c2", cityName: "חולון" }
-];
+const mapSpot = spot => ({
+    spot: spot.spotNumber,
+    floor: spot.floor,
+    status: spot.status,
+    type: spot.type
+});
 
-const parkingLots = [
-    { id: "L10", floors: 1, cityId: "c1", name: "חניון עזריאלי" },
-    { id: "L20", floors: 2, cityId: "c2", name: "חניון HIT" },
-    { id: "L30", floors: 2, cityId: "c1", name: "חניון רוטשילד" }
-];
+// Search by district -> cities in that district
+router.get('/district', async (req, res) => {
+    const district = req.query.name;
+    if (!district) {
+        return res.status(400).json({ error: "Missing 'name' query parameter" });
+    }
 
-const spots = [
-    { id: "s1", floor: 1, lotId: "L10", spotNumber: 1, isOccupied: false, type: "normal" },
-    { id: "s2", floor: 1, lotId: "L10", spotNumber: 2, isOccupied: true, type: "disabled" },
-    { id: "s3", floor: 1, lotId: "L10", spotNumber: 3, isOccupied: false, type: "dean" },
+    const cities = await City.find({ district }).select('name district');
+    res.json(cities.map(c => ({ id: c._id, name: c.name, district: c.district })));
+});
 
-    { id: "s4", floor: 1, lotId: "L20", spotNumber: 1, isOccupied: true, type: "normal" },
-    { id: "s5", floor: 2, lotId: "L20", spotNumber: 2, isOccupied: false, type: "normal" },
-    { id: "s6", floor: 2, lotId: "L20", spotNumber: 3, isOccupied: true, type: "disabled" },
-
-    { id: "s7", floor: 1, lotId: "L30", spotNumber: 1, isOccupied: false, type: "normal" },
-    { id: "s8", floor: 2, lotId: "L30", spotNumber: 2, isOccupied: true, type: "disabled" },
-    { id: "s9", floor: 2, lotId: "L30", spotNumber: 3, isOccupied: false, type: "normal" }
-];
-
-router.get('/city', (req, res) => {
+// Search by city -> the city's parking lots (with spots)
+router.get('/city', async (req, res) => {
     const requestedCityName = req.query.name;
-
     if (!requestedCityName) {
         return res.status(400).json({ error: "Missing 'name' query parameter" });
     }
-    const city = cities.find(c => c.cityName === requestedCityName);
 
+    const city = await City.findOne({ name: requestedCityName });
     if (!city) {
         return res.status(404).json({ error: "City not found" });
     }
-    const cityParkingLots = parkingLots.filter(lot => lot.cityId === city.id);
-    const responseData = cityParkingLots.map(lot => {
-        const lotSpots = spots.filter(spot => spot.lotId === lot.id);
+
+    const lots = await ParkingLot.find({ city: city._id });
+    const responseData = await Promise.all(lots.map(async lot => {
+        const spots = await ParkingSpot.find({ parkingLot: lot._id });
         return {
             parkingName: lot.name,
-            floors: lot.floors,
-            spots: lotSpots.map(spot => ({
-                spot: spot.spotNumber,
-                floor: spot.floor,
-                status: spot.isOccupied,
-                type: spot.type
-            }))
+            address: lot.address,
+            spotCount: lot.spotCount,
+            spots: spots.map(mapSpot)
         };
-    });
+    }));
+
     res.json(responseData);
 });
 
-router.get('/lot', (req, res) => {
+// Single parking lot (with spots) within a city
+router.get('/lot', async (req, res) => {
     const { cityName, lotName } = req.query;
     if (!cityName || !lotName) {
         return res.status(400).json({ error: "Missing 'cityName' or 'lotName' query parameters" });
     }
 
-    const city = cities.find(c => c.cityName === cityName);
+    const city = await City.findOne({ name: cityName });
     if (!city) {
         return res.status(404).json({ error: "City not found" });
     }
 
-    const parkingLot = parkingLots.find(lot => lot.cityId === city.id && lot.name === lotName);
+    const parkingLot = await ParkingLot.findOne({ city: city._id, name: lotName });
     if (!parkingLot) {
         return res.status(404).json({ error: "Parking lot not found in the specified city" });
     }
-    const lotSpots = spots.filter(spot => spot.lotId === parkingLot.id);
 
-    const responseData = {
+    const spots = await ParkingSpot.find({ parkingLot: parkingLot._id });
+    res.json({
         parkingName: parkingLot.name,
-        floors: parkingLot.floors,
-        spots: lotSpots.map(spot => ({
-            spot: spot.spotNumber,
-            floor: spot.floor,
-            status: spot.isOccupied,
-            type: spot.type
-        }))
-    };
-
-    res.json(responseData);
+        address: parkingLot.address,
+        spotCount: parkingLot.spotCount,
+        spots: spots.map(mapSpot)
+    });
 });
 
 export default router;
