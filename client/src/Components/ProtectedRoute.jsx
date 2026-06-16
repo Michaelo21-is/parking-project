@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import axios from "axios";
+import Loading from "./Loading";
 
 export default function ProtectedRoute({ children }) {
   const [permission, setPermission] = useState(null);
@@ -25,7 +26,7 @@ export default function ProtectedRoute({ children }) {
   }, []);
 
   if (loading) {
-    return <div>Loading...</div>;
+    return <Loading />;
   }
 
   if (permission !== "permission") {

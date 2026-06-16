@@ -1,16 +1,9 @@
 import { useState, useEffect } from "react";
 import { loadParkingDataByCityAndParkName } from "../api/LoadParkingDataByCityAndParkName";
 import axios from 'axios'
+import Loading from "./Loading";
 function Parking() {
-  const [normalParkingNum, setNormalParkingNum] = useState(0);
-  const [disableParkingNum, setDisableParkingNum] = useState(0);
-  const [deanParkingNum, setDeanParkingNum] = useState(0);
-  const [sumOfFloors, setSumOfFloor] = useState(0);
-  const [currentFloor, setCurrentFloor] = useState(null);
-  const [cityName, setCityName] = useState("");
-  const [searchCityName, setSearchCityName] =useState("");  
-  const [parkName, setParkName] = useState("");
-  const [searchParkName, setSearchParkName] = useState("");
+  
   const [loading, setLoading] = useState(false);
 
   async function loadParkingData(){
@@ -107,6 +100,7 @@ function Parking() {
           <span className="text-lg">נכה</span>
           <span className="text-3xl font-bold">{disableParkingNum}</span>
         </div>
+        { loading && <Loading />}
       </div>
     </div>
   );
