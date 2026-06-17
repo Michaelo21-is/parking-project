@@ -3,22 +3,20 @@ import axios from "axios";
 import { getParkingByCity } from "../api/LoadParkingByCityApi";
 import { Link } from "react-router";
 import Loading from "./Loading";
+import { getStateByCoordinates } from "../api/GeoCodingApi";
 
 export default function App() {
-  //  need to remove this function this function only for testing
-  function sleep(ms) {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-  }
+  
 
   const [searchCityName, setSearchCityName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const GEOAPI = import.meta.env.VITE_GEO_CODING_API_KEY;
 
   const cityName = ["תל אביב", "חולון"];
   const [suggestedCity, setSuggestedCity] = useState([]);
 
+  // geting park info through city search
   async function handleOnSubmit() {
     setLoading(true);
 
@@ -48,22 +46,7 @@ export default function App() {
     }
   }
 
-  async function getStateByCoordinates(latitude, longitude) {
-    try {
-      const response = await axios.get("https://geocode.maps.co/reverse", {
-        params: {
-          lat: latitude,
-          lon: longitude,
-          api_key: GEOAPI,
-          format: "json",
-        },
-      });
-
-      return response.data.address?.state || null;
-    } catch (e) {
-      return null;
-    }
-  }
+  
 
   async function searchByState() {
     setLoading(true);
@@ -86,7 +69,6 @@ export default function App() {
 
         console.log("state:", state);
 
-        await sleep(10000);
 
         setLoading(false);
 
@@ -125,7 +107,7 @@ export default function App() {
       <div className="min-h-screen bg-white py-10">
         <Link
           className="absolute top-10 left-5 p-3 bg-slate-900 hover:bg-slate-700 text-white font-semibold text-md rounded-xl"
-          to={"/mangement"}
+          to={"/management"}
         >
           כניסה למורשים
         </Link>
