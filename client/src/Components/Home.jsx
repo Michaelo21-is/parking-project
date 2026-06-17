@@ -22,7 +22,7 @@ export default function App() {
 
     try {
       const responseData = await getParkingByCity(searchCityName);
-      loadParkingByCityName(responseData);
+      // setting up the city information
       setSuggestedCity([]);
     } catch (e) {
       const errorMessage = e.response?.data?.error;

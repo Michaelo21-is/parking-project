@@ -5,83 +5,57 @@ import Loading from "./Loading";
 function Parking() {
   
   const [loading, setLoading] = useState(false);
-
+  const [currentFloor, setCurrentFloot] = useState("");
+  const [ parkingFloor, setParkingFloor ] = useState([]);
   async function loadParkingData(){
     try{
-      const responseData = await loadParkingDataByCityAndParkName(parkName, cityName);
-      let normal = 0;
-      let disable = 0;
-      let dean = 0;
-      setSumOfFloor(responseData.floors)
-
-      for (let i = 0; i < responseData.spots.length; i++) {
-        const spot = responseData.spots[i];
-
-        if (spot.status === true) {
-          switch (spot.type) {
-            case "normal":
-              normal++;
-              break;
-            case "disable":
-              disable++;
-              break;
-            case "dean":
-              dean++;
-              break;
-            default:
-              break;
-          }
-        }
-      }
-      setNormalParkingNum(normal);
-      setDisableParkingNum(disable);
-      setDeanParkingNum(dean);
+      // need to return num of parking sum of floors and thats it
+      const responseData = await loadParkingDataByCityAndParkName(parkName, cityName, floor);
+      setParkingFloor(responseData.parkingFloor)
+      setNormalParkingNum(responseData.normal);
+      setDisableParkingNum(responseData.disable);
+      setDeanParkingNum(responseData.dean);
       }
       catch(e){
         const erorrMessage = e.response.data.error
         console.log("printing the error maseege",erorrMessage)
         if(erorrMessage === "City not found"){
-          alert("השם של העיר לא רשום נכון");
+          alert("page not found");
           return;
           }
         if(erorrMessage === "Parking lot not found in the specified city"){
-          alert("השם של החניון לא רשום נכון")
+          alert("page not found")
           return
         }
         alert("משהו לא עבד טוב בשרת בבקשה תבצע את הפעולה עוד פעם");
         console.log("something went bad, error maseege, ", e);        
       }
   }
-  async function loadParkingData(){
-    setLoading(true)
-    const queryParms = new URLSearchParams(window.location.search);
+    useEffect(() => {
+      const queryParams = new URLSearchParams(window.location.search);
 
-    const parkName = queryParms.get(`parkName`);
-    const cityName = queryParms.get(`cityName`);
-    const floor = queryParms.get(`floor`);
-    setParkName(parkName);
-    setCityName(cityName);
-    setfloor(currentFloor);
-    if(floor.isEmpty){
-      await loadParkingDataByCityAndParkName(cityName, parkName)
-    }
-    else{
-      // search it by floor num 
-    }
-    setLoading(false);
-  }
-  useEffect(() =>{
-    loadParkingData();
-  },[currentFloor])
+      const park = queryParams.get("parkName");
+      const city = queryParams.get("cityName");
+      const floor = queryParams.get("floor");
+
+      setParkName(park || "");
+      setCityName(city || "");
+      setCurrentFloor(floor || "");
+    }, []);
+    useEffect(() =>{
+      loadParkingData();
+    },[currentFloor])
 
   
-
+  async function handleOnChangeFloor(chosenFloor) {
+    setCurrentFloot(chosenFloor);
+  }
  
 
   return (
     <div className="rounded-lg p-4 mt-20">
       
-
+      
       <h2 className="text-2xl font-bold text-center mb-4">{parkName}, {cityName}</h2>
       <p className="text-gray-600 text-center mb-6">מספר חניות פנויות:</p>
 
@@ -100,8 +74,20 @@ function Parking() {
           <span className="text-lg">נכה</span>
           <span className="text-3xl font-bold">{disableParkingNum}</span>
         </div>
-        { loading && <Loading />}
       </div>
+      <p className="text-md text-white font-semibold mt-2">לחץ כאן כדי להחליף את הקומות</p>
+      <div className="mt-2 flex-row justify-center">
+        {parkingFloor.map((floor) => (
+            <button
+              key={floor}
+              onClick={() => handleOnChangeFloor(floor)}
+              className="px-4 py-2 rounded-lg border border-gray-400 hover:bg-gray-100"
+            >
+             {floor}
+            </button>
+          ))}
+      </div>
+      { loading && <Loading />}
     </div>
   );
 }
