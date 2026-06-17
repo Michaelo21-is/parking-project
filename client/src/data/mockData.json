@@ -1,0 +1,32 @@
+[
+  {
+    "parkingName": "חניון חולון",
+    "spots": [
+      { "spot": 1, "type": "normal", "status": false },
+      { "spot": 2, "type": "normal", "status": true },
+      { "spot": 3, "type": "disable", "status": false },
+      { "spot": 4, "type": "dean", "status": true },
+      { "spot": 5, "type": "normal", "status": false }
+    ]
+  },
+  {
+    "parkingName": "חניון תל אביב",
+    "spots": [
+      { "spot": 1, "type": "normal", "status": true },
+      { "spot": 2, "type": "disable", "status": false },
+      { "spot": 3, "type": "normal", "status": true },
+      { "spot": 4, "type": "dean", "status": false },
+      { "spot": 5, "type": "normal", "status": false }
+    ]
+  },
+  {
+    "parkingName": "חניון חיפה",
+    "spots": [
+      { "spot": 1, "type": "normal", "status": false },
+      { "spot": 2, "type": "normal", "status": true },
+      { "spot": 3, "type": "disable", "status": true },
+      { "spot": 4, "type": "dean", "status": false },
+      { "spot": 5, "type": "normal", "status": true }
+    ]
+  }
+]
