@@ -3,12 +3,15 @@ import User from '../models/User.js';
 
 // Verifies the JWT and attaches the user to req.user
 export const protect = async (req, res, next) => {
+    // Prefer the httpOnly cookie; fall back to a Bearer header
     const header = req.headers.authorization;
-    if (!header || !header.startsWith('Bearer ')) {
-        return res.status(401).json({ error: 'Missing or invalid Authorization header' });
+    const token = req.cookies?.token
+        || (header && header.startsWith('Bearer ') ? header.split(' ')[1] : null);
+
+    if (!token) {
+        return res.status(401).json({ error: 'Not authenticated' });
     }
 
-    const token = header.split(' ')[1];
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         const user = await User.findById(decoded.id);

@@ -12,15 +12,62 @@ const mapSpot = spot => ({
     type: spot.type
 });
 
-// Search by district -> cities in that district
+// Search by district -> cities in that district, each mapped to its parking lot names
+// e.g. { "תל אביב": ["lot A", "lot B"], "רמת גן": [] }
 router.get('/district', async (req, res) => {
     const district = req.query.name;
     if (!district) {
         return res.status(400).json({ error: "Missing 'name' query parameter" });
     }
 
-    const cities = await City.find({ district }).select('name district');
-    res.json(cities.map(c => ({ id: c._id, name: c.name, district: c.district })));
+    const cities = await City.find({ district }).select('name');
+    const result = {};
+    await Promise.all(cities.map(async city => {
+        const lots = await ParkingLot.find({ city: city._id }).select('name');
+        result[city.name] = lots.map(lot => lot.name);
+    }));
+
+    res.json(result);
+});
+
+// Flexible search by city name, parking lot name, and/or floor number.
+// Any combination of ?cityName= &lotName= &floor= ; names match partially (case-insensitive).
+router.get('/search', async (req, res) => {
+    const { cityName, lotName, floor } = req.query;
+    if (!cityName && !lotName && floor === undefined) {
+        return res.status(400).json({ error: "Provide at least one of 'cityName', 'lotName', or 'floor'" });
+    }
+
+    const lotFilter = {};
+    if (cityName) {
+        const cities = await City.find({ name: new RegExp(cityName, 'i') }).select('_id');
+        lotFilter.city = { $in: cities.map(c => c._id) };
+    }
+    if (lotName) {
+        lotFilter.name = new RegExp(lotName, 'i');
+    }
+
+    const lots = await ParkingLot.find(lotFilter).populate('city', 'name');
+
+    const spotFilter = {};
+    if (floor !== undefined) {
+        spotFilter.floor = Number(floor);
+    }
+
+    const results = await Promise.all(lots.map(async lot => {
+        const spots = await ParkingSpot.find({ parkingLot: lot._id, ...spotFilter });
+        return {
+            city: lot.city?.name,
+            parkingName: lot.name,
+            address: lot.address,
+            spotCount: lot.spotCount,
+            spots: spots.map(mapSpot)
+        };
+    }));
+
+    // When filtering by floor, drop lots that have no spots on that floor
+    const filtered = floor !== undefined ? results.filter(r => r.spots.length > 0) : results;
+    res.json(filtered);
 });
 
 // Search by city -> the city's parking lots (with spots)

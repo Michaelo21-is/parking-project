@@ -8,6 +8,20 @@ const router = express.Router();
 const signToken = (user) =>
     jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN || '7d' });
 
+// Sets the JWT as an httpOnly cookie and returns the user (never the token itself)
+const sendAuth = (res, user, status) => {
+    const token = signToken(user);
+    res.cookie('token', token, {
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 7 * 24 * 60 * 60 * 1000
+    });
+    res.status(status).json({
+        user: { id: user._id, fullName: user.fullName, email: user.email, city: user.city }
+    });
+};
+
 router.post('/signup', async (req, res) => {
     const { fullName, email, password, cityName } = req.body;
     if (!fullName || !email || !password || !cityName) {
@@ -22,11 +36,7 @@ router.post('/signup', async (req, res) => {
     try {
         const user = await User.create({ fullName, email, password, city: city._id });
         await City.findByIdAndUpdate(city._id, { $addToSet: { authorizedUsers: user._id } });
-        const token = signToken(user);
-        res.status(201).json({
-            token,
-            user: { id: user._id, fullName: user.fullName, email: user.email, city: user.city }
-        });
+        sendAuth(res, user, 201);
     } catch (error) {
         if (error.code === 11000) {
             return res.status(409).json({ error: "Email already registered" });
@@ -46,11 +56,12 @@ router.post('/login', async (req, res) => {
         return res.status(401).json({ error: "Invalid email or password" });
     }
 
-    const token = signToken(user);
-    res.json({
-        token,
-        user: { id: user._id, fullName: user.fullName, email: user.email, city: user.city }
-    });
+    sendAuth(res, user, 200);
+});
+
+router.post('/logout', (req, res) => {
+    res.clearCookie('token');
+    res.json({ message: "Logged out" });
 });
 
 export default router;
