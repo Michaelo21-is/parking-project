@@ -13,7 +13,6 @@ const mapSpot = spot => ({
 });
 
 // Search by district -> cities in that district, each mapped to its parking lot names
-// e.g. { "תל אביב": ["lot A", "lot B"], "רמת גן": [] }
 router.get('/district', async (req, res) => {
     const district = req.query.name;
     if (!district) {
@@ -31,7 +30,6 @@ router.get('/district', async (req, res) => {
 });
 
 // Flexible search by city name, parking lot name, and/or floor number.
-// Any combination of ?cityName= &lotName= &floor= ; names match partially (case-insensitive).
 router.get('/search', async (req, res) => {
     const { cityName, lotName, floor } = req.query;
     if (!cityName && !lotName && floor === undefined) {
@@ -65,12 +63,11 @@ router.get('/search', async (req, res) => {
         };
     }));
 
-    // When filtering by floor, drop lots that have no spots on that floor
     const filtered = floor !== undefined ? results.filter(r => r.spots.length > 0) : results;
     res.json(filtered);
 });
 
-// Search by city -> the city's parking lots (with spots)
+// Search by city
 router.get('/city', async (req, res) => {
     const requestedCityName = req.query.name;
     if (!requestedCityName) {

@@ -3,7 +3,6 @@ import User from '../models/User.js';
 
 // Verifies the JWT and attaches the user to req.user
 export const protect = async (req, res, next) => {
-    // Prefer the httpOnly cookie; fall back to a Bearer header
     const header = req.headers.authorization;
     const token = req.cookies?.token
         || (header && header.startsWith('Bearer ') ? header.split(' ')[1] : null);

@@ -8,7 +8,7 @@ const router = express.Router();
 const signToken = (user) =>
     jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN || '7d' });
 
-// Sets the JWT as an httpOnly cookie and returns the user (never the token itself)
+// Sets the JWT as an httpOnly cookie and returns the user
 const sendAuth = (res, user, status) => {
     const token = signToken(user);
     res.cookie('token', token, {
