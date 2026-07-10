@@ -5,8 +5,8 @@ const citySchema = new mongoose.Schema({
     district: {
         type: String,
         required: true,
-        enum: ['Tel Aviv District', 'Central District', 'Jerusalem District',
-               'Northern District', 'Haifa District', 'Southern District']
+        enum: ['מחוז תל אביב', 'מחוז המרכז', 'מחוז ירושלים',
+               'מחוז הצפון', 'מחוז חיפה', 'מחוז הדרום']
     },
     parkingLots: [{ type: mongoose.Schema.Types.ObjectId, ref: 'ParkingLot' }],
     authorizedUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]

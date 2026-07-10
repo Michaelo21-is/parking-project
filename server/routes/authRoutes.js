@@ -2,6 +2,7 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 import City from '../models/City.js';
+import { protect } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -62,6 +63,16 @@ router.post('/login', async (req, res) => {
 router.post('/logout', (req, res) => {
     res.clearCookie('token');
     res.json({ message: "Logged out" });
+});
+
+// Checks whether the current session's token is still valid.
+// 200 + user -> frontend keeps the user on the admin page.
+// 401 (from `protect`) -> frontend redirects to login.
+router.get('/me', protect, (req, res) => {
+    const { user } = req;
+    res.json({
+        user: { id: user._id, fullName: user.fullName, email: user.email, city: user.city }
+    });
 });
 
 export default router;
