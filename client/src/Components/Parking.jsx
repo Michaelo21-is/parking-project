@@ -6,7 +6,8 @@ import io from "socket.io-client"
 import { data } from "react-router-dom";
 export default function Parking() {
   const apiBaseUrl = import.meta.env.API_BASE_URL
-  const socket = io.connect(`${apiBaseUrl}/load-praking/parkName?${parkName}cityName?${cityName}floor?${floor}`);
+  const socket = io(apiBaseUrl);
+  
   
   const [loading, setLoading] = useState(false);
   const [currentFloor, setCurrentFloor] = useState(null);
@@ -34,6 +35,7 @@ export default function Parking() {
         console.log("something went bad, error maseege, ", e);        
       }
   }
+  
     useEffect(() => {
       const queryParams = new URLSearchParams(window.location.search);
 
@@ -44,17 +46,31 @@ export default function Parking() {
       setParkName(park || "");
       setCityName(city || "");
       setCurrentFloor(floor || "");
+      const handleUpdatePark = (responseData) => {
+      loadParkingData(responseData);
+      };
+
+      socket.on("update-park", handleUpdatePark);
+
+      return () => {
+        socket.off("update-park", handleUpdatePark);
+      };
     }, []);
     useEffect(() =>{
-      socket.on("update-prak", (responseData) => {
-        loadParkingData(responseData);
-      });
-    },[socket])
-    useEffect(() =>{
+      if(currentFloor === null) return;
       socket.emit("chagne_floor",{
         floor: currentFloor,
       })
     },[floor])
+    useEffect(() => {
+      if (!parkName || !cityName || currentFloor === null) return;
+
+      socket.emit("join_parking", {
+        parkName,
+        cityName,
+        floor: currentFloor,
+      });
+    }, [parkName, cityName]);
   
   async function handleOnChangeFloor(chosenFloor) {
     setCurrentFloor(chosenFloor);
