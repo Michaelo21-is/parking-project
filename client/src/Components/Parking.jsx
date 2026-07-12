@@ -2,15 +2,18 @@ import { useState, useEffect } from "react";
 import { loadParkingDataByCityAndParkName } from "../api/LoadParkingDataByCityAndParkName";
 import axios from 'axios'
 import Loading from "./Loading";
-function Parking() {
+import io from "socket.io-client"
+import { data } from "react-router-dom";
+export default function Parking() {
+  const apiBaseUrl = import.meta.env.API_BASE_URL
+  const socket = io.connect(`${apiBaseUrl}/load-praking/parkName?${parkName}cityName?${cityName}floor?${floor}`);
   
   const [loading, setLoading] = useState(false);
-  const [currentFloor, setCurrentFloot] = useState("");
+  const [currentFloor, setCurrentFloor] = useState(null);
   const [ parkingFloor, setParkingFloor ] = useState([]);
-  async function loadParkingData(){
+  async function loadParkingData(responseData){
     try{
       // need to return num of parking sum of floors and thats it
-      const responseData = await loadParkingDataByCityAndParkName(parkName, cityName, floor);
       setParkingFloor(responseData.parkingFloor)
       setNormalParkingNum(responseData.normal);
       setDisableParkingNum(responseData.disable);
@@ -43,12 +46,18 @@ function Parking() {
       setCurrentFloor(floor || "");
     }, []);
     useEffect(() =>{
-      loadParkingData();
-    },[currentFloor])
-
+      socket.on("update-prak", (responseData) => {
+        loadParkingData(responseData);
+      });
+    },[socket])
+    useEffect(() =>{
+      socket.emit("chagne_floor",{
+        floor: currentFloor,
+      })
+    },[floor])
   
   async function handleOnChangeFloor(chosenFloor) {
-    setCurrentFloot(chosenFloor);
+    setCurrentFloor(chosenFloor);
   }
  
 
@@ -91,5 +100,3 @@ function Parking() {
     </div>
   );
 }
-
-export default Parking;

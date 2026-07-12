@@ -6,6 +6,7 @@ import App from "./Components/Home.jsx";
 import Parking from "./Components/Parking.jsx";
 import ManagementPage from "./Components/Management.jsx";
 import ProtectedRoute from "./Components/ProtectedRoute.jsx";
+import AddUser from "./Components/AddUser.jsx";
 
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 
@@ -23,6 +24,14 @@ const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <ManagementPage />
+      </ProtectedRoute>
+    )
+  },
+  {
+    path: "/add-user",
+    element:(
+      <ProtectedRoute>
+        <AddUser />
       </ProtectedRoute>
     )
   }

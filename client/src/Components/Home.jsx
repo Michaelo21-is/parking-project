@@ -11,10 +11,14 @@ export default function App() {
   const [searchCityName, setSearchCityName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-
-
-  const cityName = ["תל אביב", "חולון"];
   const [suggestedCity, setSuggestedCity] = useState([]);
+  const [parkResult, setParkResult] = useState([
+    {
+      cityName: "",
+      parkName: "",
+      aviablePlace: ""
+    }
+  ]);
 
   // geting park info through city search
   async function handleOnSubmit() {
@@ -33,11 +37,7 @@ export default function App() {
         alert("השם של העיר לא רשום נכון");
         return;
       }
-
-      if (errorMessage === "Parking lot not found in the specified city") {
-        alert("השם של החניון לא רשום נכון");
-        return;
-      }
+ 
 
       alert("משהו לא עבד טוב בשרת בבקשה תבצע את הפעולה עוד פעם");
       console.log("something went bad, error message: ", e);
@@ -85,17 +85,8 @@ export default function App() {
 
   function handleOnCityInput(query) {
     setSearchCityName(query);
+    // api call to set sugested cities
 
-    if (query.trim() === "") {
-      setSuggestedCity([]);
-      return;
-    }
-
-    const filteredCities = cityName.filter((city) =>
-      city.includes(query.trim())
-    );
-
-    setSuggestedCity(filteredCities);
   }
 
   useEffect(() => {
@@ -168,6 +159,25 @@ export default function App() {
                   ))}
                 </div>
               )}
+
+            </div>
+          </div>
+          <div className="mt-4">
+            <h2 className="text-bold text-2xl">
+              רשימת ערים
+            </h2>
+            <div className="mt-5">
+              <p className="font-semibold text-2xl ">
+                 תל אביב :
+              </p>
+              <div className="p-4 border mt-3 hover:shadow-xl hover:cursor-pointer">
+                <p className="text-lg">
+                  חניון אלוזורוב
+                </p>
+                <p>
+                  מספר חניות פנויות : 5
+                </p>
+              </div>
             </div>
           </div>
 
