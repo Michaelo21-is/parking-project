@@ -23,7 +23,7 @@ router.get('/district', async (req, res) => {
     const result = {};
     await Promise.all(cities.map(async city => {
         const lots = await ParkingLot.find({ city: city._id }).select('name');
-        result[city.name] = lots.map(lot => lot.name);
+        result[city.name] = lots.map(lot => ({ lotId: lot._id, name: lot.name }));
     }));
 
     res.json(result);
@@ -55,6 +55,7 @@ router.get('/search', async (req, res) => {
     const results = await Promise.all(lots.map(async lot => {
         const spots = await ParkingSpot.find({ parkingLot: lot._id, ...spotFilter });
         return {
+            lotId: lot._id,
             city: lot.city?.name,
             parkingName: lot.name,
             address: lot.address,
@@ -83,6 +84,7 @@ router.get('/city', async (req, res) => {
     const responseData = await Promise.all(lots.map(async lot => {
         const spots = await ParkingSpot.find({ parkingLot: lot._id });
         return {
+            lotId: lot._id,
             parkingName: lot.name,
             address: lot.address,
             spotCount: lot.spotCount,
@@ -114,6 +116,7 @@ router.get('/lot', async (req, res) => {
     if (floor === undefined || floor === null || floor === '') {
         const spots = await ParkingSpot.find({ parkingLot: parkingLot._id });
         return res.json({
+            lotId: parkingLot._id,
             parkingName: parkingLot.name,
             address: parkingLot.address,
             spotCount: parkingLot.spotCount,
@@ -130,6 +133,7 @@ router.get('/lot', async (req, res) => {
     });
 
     res.json({
+        lotId: parkingLot._id,
         parkingName: parkingLot.name,
         floor: Number(floor),
         freeSpots: freeCounts
