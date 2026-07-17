@@ -2,8 +2,10 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { getParkingByCity } from "../api/LoadParkingByCityApi";
 import { Link } from "react-router";
-import Loading from "./Loading";
+import Loading from "../Components/Loading";
+import { loadParkingByState } from "../api/LoadParkingByState";
 import { getStateByCoordinates } from "../api/GeoCodingApi";
+import ShowParking from "../Components/HomeComponent/ShowParking";
 
 export default function App() {
   
@@ -12,13 +14,9 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [suggestedCity, setSuggestedCity] = useState([]);
-  const [parkResult, setParkResult] = useState([
-    {
-      cityName: "",
-      parkName: "",
-      aviablePlace: ""
-    }
-  ]);
+
+  const [parkDeatils, setParkDeatils] = useState({});
+  const [visibleParkDetails, setVisibleParkDetails] = useState({});
 
   // geting park info through city search
   async function handleOnSubmit() {
@@ -62,19 +60,15 @@ export default function App() {
         const latitude = position.coords.latitude;
         const longitude = position.coords.longitude;
 
-        console.log("user latitude:", latitude);
-        console.log("user longitude:", longitude);
-
         const state = await getStateByCoordinates(latitude, longitude);
 
-        console.log("state:", state);
+        const responseData = await loadParkingByState(state);
 
+        setVisibleParkDetails(responseData);
+        setParkDeatils(responseData);
 
         setLoading(false);
 
-        // פה תעשה axios לבאק לפי state
-        // const responseData = await getParkingByState(state);
-        // setParkingData(...)
       },
       (err) => {
         setError(err.message);
@@ -84,10 +78,25 @@ export default function App() {
   }
 
   function handleOnCityInput(query) {
-    setSearchCityName(query);
-    // api call to set sugested cities
+  setSearchCityName(query);
 
+  const normalizedQuery = query.trim();
+
+  if (!normalizedQuery) {
+    setVisibleParkDetails(parkDeatils);
+    setSuggestedCity([]);
+    return;
   }
+
+  const filteredCities = Object.entries(parkDeatils).filter(
+    ([cityName]) => cityName.startsWith(normalizedQuery)
+  );
+
+  const filteredParkDetails = Object.fromEntries(filteredCities);
+
+  setVisibleParkDetails(filteredParkDetails);
+  setSuggestedCity(Object.keys(filteredParkDetails));
+}
 
   useEffect(() => {
     searchByState();
@@ -111,14 +120,14 @@ export default function App() {
           </div>
 
           <div className="mb-5 flex justify-center">
-            <div className="relative w-full max-w-2xl">
+            <div className="relative w-full max-w-4xl">
               <input
                 type="text"
                 dir="rtl"
                 placeholder="שם עיר"
                 value={searchCityName}
                 onChange={(e) => handleOnCityInput(e.target.value)}
-                className="w-full border border-gray-300 rounded p-2 pr-12 text-right"
+                className="w-full border border-gray-300 rounded px-6 py-4 text-right"
               />
 
               <button
@@ -163,27 +172,15 @@ export default function App() {
             </div>
           </div>
           <div className="mt-4">
-            <h2 className="text-bold text-2xl">
+            <h2 className="text-bold text-2xl font-bold">
               רשימת ערים
             </h2>
-            <div className="mt-5">
-              <p className="font-semibold text-2xl ">
-                 תל אביב :
-              </p>
-              <div className="p-4 border mt-3 hover:shadow-xl hover:cursor-pointer">
-                <p className="text-lg">
-                  חניון אלוזורוב
-                </p>
-                <p>
-                  מספר חניות פנויות : 5
-                </p>
-              </div>
+              <ShowParking parkDetails={visibleParkDetails}/>
             </div>
           </div>
 
           {loading && <Loading />}
         </div>
       </div>
-    </div>
   );
 }

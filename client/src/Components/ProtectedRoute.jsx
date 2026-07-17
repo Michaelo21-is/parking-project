@@ -10,12 +10,16 @@ export default function ProtectedRoute({ children }) {
   useEffect(() => {
     async function checkPermission() {
       try {
-        const response = await axios.get("http://localhost:3000/check-permission", {
-          withCredentials: true,
-        });
+        const response = await axios.get(
+          "http://localhost:3000/check-permission",
+          {
+            withCredentials: true,
+          }
+        );
 
         setPermission(response.data);
       } catch (error) {
+        console.error(error);
         setPermission("denied");
       } finally {
         setLoading(false);

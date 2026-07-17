@@ -2,11 +2,12 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
 
-import App from "./Components/Home.jsx";
-import Parking from "./Components/Parking.jsx";
-import ManagementPage from "./Components/Management.jsx";
+import App from "./pages/Home.jsx";
+import Parking from "./pages/Parking.jsx";
+import ManagementPage from "./pages/Management.jsx";
 import ProtectedRoute from "./Components/ProtectedRoute.jsx";
-import AddUser from "./Components/AddUser.jsx";
+import AddUser from "./pages/AddUser.jsx";
+import Login from "./pages/Login.jsx";
 
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 
@@ -33,6 +34,12 @@ const router = createBrowserRouter([
       <ProtectedRoute>
         <AddUser />
       </ProtectedRoute>
+    )
+  },
+  {
+    path:"/login",
+    element:(
+      <Login />
     )
   }
 ]);

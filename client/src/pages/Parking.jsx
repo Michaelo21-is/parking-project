@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { loadParkingDataByCityAndParkName } from "../api/LoadParkingDataByCityAndParkName";
 import axios from 'axios'
-import Loading from "./Loading";
+import Loading from "../Components/Loading";
 import io from "socket.io-client"
 import { data } from "react-router-dom";
 export default function Parking() {
