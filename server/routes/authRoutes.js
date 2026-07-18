@@ -1,7 +1,6 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
-import City from '../models/City.js';
 import { protect } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -22,29 +21,6 @@ const sendAuth = (res, user, status) => {
         user: { id: user._id, fullName: user.fullName, email: user.email, city: user.city }
     });
 };
-
-router.post('/signup', async (req, res) => {
-    const { fullName, email, password, cityName } = req.body;
-    if (!fullName || !email || !password || !cityName) {
-        return res.status(400).json({ error: "Missing 'fullName', 'email', 'password', or 'cityName'" });
-    }
-
-    const city = await City.findOne({ name: cityName });
-    if (!city) {
-        return res.status(404).json({ error: "City not found" });
-    }
-
-    try {
-        const user = await User.create({ fullName, email, password, city: city._id });
-        await City.findByIdAndUpdate(city._id, { $addToSet: { authorizedUsers: user._id } });
-        sendAuth(res, user, 201);
-    } catch (error) {
-        if (error.code === 11000) {
-            return res.status(409).json({ error: "Email already registered" });
-        }
-        res.status(400).json({ error: error.message });
-    }
-});
 
 router.post('/login', async (req, res) => {
     const { email, password } = req.body;

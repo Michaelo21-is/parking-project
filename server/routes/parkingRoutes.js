@@ -68,6 +68,23 @@ router.get('/search', async (req, res) => {
     res.json(filtered);
 });
 
+// Autocomplete city names by prefix
+router.get('/cities/autocomplete', async (req, res) => {
+    const q = req.query.q;
+    if (typeof q !== 'string' || q.trim().length < 2) {
+        return res.json([]);
+    }
+
+    try {
+        const escaped = q.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const prefixRegex = new RegExp('^' + escaped, 'i');
+        const cities = await City.find({ name: prefixRegex }).select('name').limit(10);
+        res.json(cities.map(city => ({ id: city._id, name: city.name })));
+    } catch (err) {
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 // Search by city
 router.get('/city', async (req, res) => {
     const requestedCityName = req.query.name;
