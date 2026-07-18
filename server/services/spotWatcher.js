@@ -1,7 +1,7 @@
 import ParkingSpot from '../models/ParkingSpot.js';
 import { getIO } from '../sockets/socket.js';
 
-const emitLotAvailability = async (io, lotId) => {
+const getFloorCounts = async (lotId) => {
     const byFloor = await ParkingSpot.aggregate([
         { $match: { parkingLot: lotId } },
         {
@@ -14,7 +14,12 @@ const emitLotAvailability = async (io, lotId) => {
         { $sort: { _id: 1 } }
     ]);
 
-    const totals = byFloor.reduce((acc, f) => ({
+    return byFloor.map(f => ({ floor: f._id, total: f.total, available: f.available }));
+};
+
+const emitAvailability = async (io, lotId, changedFloor) => {
+    const floors = await getFloorCounts(lotId);
+    const totals = floors.reduce((acc, f) => ({
         total: acc.total + f.total,
         available: acc.available + f.available
     }), { total: 0, available: 0 });
@@ -23,7 +28,15 @@ const emitLotAvailability = async (io, lotId) => {
         parkingLot: lotId,
         total: totals.total,
         available: totals.available,
-        floors: byFloor.map(f => ({ floor: f._id, total: f.total, available: f.available }))
+        floors
+    });
+
+    const floorCounts = floors.find(f => f.floor === changedFloor);
+    io.to(`lot:${lotId}:floor:${changedFloor}`).emit('floorAvailability', {
+        parkingLot: lotId,
+        floor: changedFloor,
+        total: floorCounts?.total ?? 0,
+        available: floorCounts?.available ?? 0
     });
 };
 
@@ -35,7 +48,7 @@ export const watchParkingSpots = () => {
         if (!doc) return;
 
         const io = getIO();
-        await emitLotAvailability(io, doc.parkingLot);
+        await emitAvailability(io, doc.parkingLot, doc.floor);
     });
 
     changeStream.on('error', (err) => {
