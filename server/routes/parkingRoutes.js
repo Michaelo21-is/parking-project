@@ -30,11 +30,7 @@ router.get('/district', async (req, res) => {
     const result = {};
     await Promise.all(cities.map(async city => {
         const lots = await ParkingLot.find({ city: city._id }).select('name');
-        result[city.name] = await Promise.all(lots.map(async lot => ({
-            lotId: lot._id,
-            name: lot.name,
-            floors: await getFloors(lot._id)
-        })));
+        result[city.name] = lots.map(lot => ({ lotId: lot._id, name: lot.name }));
     }));
 
     res.json(result);
@@ -70,14 +66,13 @@ router.get('/search', async (req, res) => {
             city: lot.city?.name,
             parkingName: lot.name,
             address: lot.address,
-            spotCount: lot.spotCount,
-            floors: await getFloors(lot._id),
-            spots: spots.map(mapSpot)
+            spotCount: spots.filter(spot => spot.status === 'free').length,
+            matchedSpotCount: spots.length
         };
     }));
 
-    const filtered = floor !== undefined ? results.filter(r => r.spots.length > 0) : results;
-    res.json(filtered);
+    const filtered = floor !== undefined ? results.filter(r => r.matchedSpotCount > 0) : results;
+    res.json(filtered.map(({ matchedSpotCount, ...rest }) => rest));
 });
 
 // Autocomplete city names by prefix
@@ -116,9 +111,7 @@ router.get('/city', async (req, res) => {
             lotId: lot._id,
             parkingName: lot.name,
             address: lot.address,
-            spotCount: lot.spotCount,
-            floors: floorsFromSpots(spots),
-            spots: spots.map(mapSpot)
+            spotCount: spots.filter(spot => spot.status === 'free').length
         };
     }));
 
