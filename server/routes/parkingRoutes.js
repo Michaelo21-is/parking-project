@@ -12,6 +12,13 @@ const mapSpot = spot => ({
     type: spot.type
 });
 
+const floorsFromSpots = spots => [...new Set(spots.map(spot => spot.floor))].sort((a, b) => a - b);
+
+const getFloors = async lotId => {
+    const floors = await ParkingSpot.distinct('floor', { parkingLot: lotId });
+    return floors.sort((a, b) => a - b);
+};
+
 // Search by district -> cities in that district, each mapped to its parking lot names
 router.get('/district', async (req, res) => {
     const district = req.query.name;
@@ -23,7 +30,11 @@ router.get('/district', async (req, res) => {
     const result = {};
     await Promise.all(cities.map(async city => {
         const lots = await ParkingLot.find({ city: city._id }).select('name');
-        result[city.name] = lots.map(lot => ({ lotId: lot._id, name: lot.name }));
+        result[city.name] = await Promise.all(lots.map(async lot => ({
+            lotId: lot._id,
+            name: lot.name,
+            floors: await getFloors(lot._id)
+        })));
     }));
 
     res.json(result);
@@ -60,6 +71,7 @@ router.get('/search', async (req, res) => {
             parkingName: lot.name,
             address: lot.address,
             spotCount: lot.spotCount,
+            floors: await getFloors(lot._id),
             spots: spots.map(mapSpot)
         };
     }));
@@ -105,6 +117,7 @@ router.get('/city', async (req, res) => {
             parkingName: lot.name,
             address: lot.address,
             spotCount: lot.spotCount,
+            floors: floorsFromSpots(spots),
             spots: spots.map(mapSpot)
         };
     }));
@@ -137,6 +150,7 @@ router.get('/lot', async (req, res) => {
             parkingName: parkingLot.name,
             address: parkingLot.address,
             spotCount: parkingLot.spotCount,
+            floors: floorsFromSpots(spots),
             spots: spots.map(mapSpot)
         });
     }
@@ -153,6 +167,7 @@ router.get('/lot', async (req, res) => {
         lotId: parkingLot._id,
         parkingName: parkingLot.name,
         floor: Number(floor),
+        floors: await getFloors(parkingLot._id),
         freeSpots: freeCounts
     });
 });
