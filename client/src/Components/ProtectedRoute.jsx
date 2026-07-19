@@ -2,25 +2,20 @@ import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import axios from "axios";
 import Loading from "./Loading";
+import { checkPermissionRequest } from "../api/checkpermission";
 
 export default function ProtectedRoute({ children }) {
-  const [permission, setPermission] = useState(null);
+  const [permission, setPermission] = useState(true);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function checkPermission() {
       try {
-        const response = await axios.get(
-          "http://localhost:3000/check-permission",
-          {
-            withCredentials: true,
-          }
-        );
-
-        setPermission(response.data);
+        await checkPermissionRequest()
+        setPermission(true);
       } catch (error) {
         console.error(error);
-        setPermission("denied");
+        setPermission(false);
       } finally {
         setLoading(false);
       }
@@ -33,7 +28,7 @@ export default function ProtectedRoute({ children }) {
     return <Loading />;
   }
 
-  if (permission !== "permission") {
+  if (permission === false) {
     return <Navigate to="/login" replace />;
   }
 

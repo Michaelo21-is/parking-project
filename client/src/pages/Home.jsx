@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { getParkingByCity } from "../api/LoadParkingByCityApi";
-import { Link } from "react-router";
+import { Link } from "react-router-dom";
 import Loading from "../Components/Loading";
 import { loadParkingByState } from "../api/LoadParkingByState";
 import { getStateByCoordinates } from "../api/GeoCodingApi";
 import ShowParking from "../Components/HomeComponent/ShowParking";
+import { autoCompleteCityRequest } from "../api/autoCompleteCity";
 
 export default function App() {
   
@@ -20,10 +21,30 @@ export default function App() {
 
   // geting park info through city search
   async function handleOnSubmit() {
+    const normalizedCityName = searchCityName.trim(); // removing all the uncessery spaceing
+
+    if (!normalizedCityName) {
+      alert("יש להזין שם עיר");
+      return;
+    }
+
     setLoading(true);
+
 
     try {
       const responseData = await getParkingByCity(searchCityName);
+
+      const parkingLots = responseData.map((parkingLot) => ({
+      lotId: parkingLot._id,
+      name: parkingLot.name,
+      }));
+
+     console.log("Parking lots:", parkingLots);
+
+      setVisibleParkDetails({
+        [normalizedCityName]: parkingLots,
+      });
+
       // setting up the city information
       setSuggestedCity([]);
     } catch (e) {
@@ -77,26 +98,34 @@ export default function App() {
     );
   }
 
-  function handleOnCityInput(query) {
-  setSearchCityName(query);
+  async function handleOnCityInput(query) {
+    setSearchCityName(query);
 
-  const normalizedQuery = query.trim();
+    const normalizedQuery = query.trim();
 
-  if (!normalizedQuery) {
-    setVisibleParkDetails(parkDeatils);
-    setSuggestedCity([]);
-    return;
+    if (!normalizedQuery) {
+      setSuggestedCity([]);
+      setVisibleParkDetails(parkDeatils);
+      return;
+    }
+
+    try {
+      const responseData = await autoCompleteCityRequest(normalizedQuery);
+
+      setSuggestedCity(
+        Array.isArray(responseData) ? responseData : []
+      );
+
+      const filteredCities = Object.entries(parkDeatils).filter(
+        ([cityName]) => cityName.startsWith(normalizedQuery)
+      );
+
+      setVisibleParkDetails(Object.fromEntries(filteredCities));
+    } catch (error) {
+      console.error("Autocomplete request failed:", error);
+      setSuggestedCity([]);
+    }
   }
-
-  const filteredCities = Object.entries(parkDeatils).filter(
-    ([cityName]) => cityName.startsWith(normalizedQuery)
-  );
-
-  const filteredParkDetails = Object.fromEntries(filteredCities);
-
-  setVisibleParkDetails(filteredParkDetails);
-  setSuggestedCity(Object.keys(filteredParkDetails));
-}
 
   useEffect(() => {
     searchByState();
@@ -155,15 +184,15 @@ export default function App() {
                 <div className="absolute z-10 mt-2 w-full rounded border border-gray-300 bg-white shadow">
                   {suggestedCity.map((city) => (
                     <button
-                      key={city}
+                      key={city.id}
                       type="button"
                       className="block w-full px-4 py-2 text-right hover:bg-gray-100"
                       onClick={() => {
-                        setSearchCityName(city);
+                        setSearchCityName(city.name);
                         setSuggestedCity([]);
                       }}
                     >
-                      {city}
+                      {city.name}
                     </button>
                   ))}
                 </div>

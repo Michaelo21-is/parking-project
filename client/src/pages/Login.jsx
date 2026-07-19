@@ -9,7 +9,7 @@ export default function Login(){
     const [loading , setLoading] = useState(false);
     const navigate = useNavigate();
     async function handleOnSubmit(e){
-        e.preventdefault()
+        e.preventDefault();
         setLoading(true);
         try{
             await loginRequest(form);
@@ -38,9 +38,9 @@ export default function Login(){
 
         <form className="space-y-4" onSubmit={handleOnSubmit}>
           <div>
-            <label htmlFor="email" className="mb-1 block text-sm font-medium text-black text-right">
+            <p  className="mb-1 block text-sm font-medium text-black text-right">
               אימייל
-            </label>
+            </p>
             <input
               id="email"
               type="email"
@@ -52,9 +52,9 @@ export default function Login(){
           </div>
 
           <div>
-            <label htmlFor="password" className="mb-1 block text-sm font-medium text-black text-right">
+            <p className="mb-1 block text-sm font-medium text-black text-right">
               סיסמא
-            </label>
+            </p>
             <input
               id="password"
               type="password"

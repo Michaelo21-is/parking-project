@@ -16,7 +16,7 @@ export default function ShowParking({ parkDetails }) {
             >
               <Link
                 className="block text-lg"
-                to={`/parking/${parkingLot.lotId}`}
+                to={`/parking/${parkingLot.lotId}?parkName=${(parkingLot.name)}&parkCity=${(cityName)}`}
               >
                 {parkingLot.name}
               </Link>

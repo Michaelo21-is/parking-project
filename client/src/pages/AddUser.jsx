@@ -28,17 +28,16 @@ export default function AddUser() {
     <div className="flex min-h-screen items-center justify-center bg-white px-4">
       <div className="w-full max-w-md rounded-xl border border-black bg-white p-8 shadow-sm">
         <h1 className="mb-6 text-center text-2xl font-bold text-black">
-          הרשמה
+          הוספת משתמש חדש
         </h1>
 
         <form className="space-y-4" onSubmit={handleOnSubmit}>
           <div>
-            <label
-              htmlFor="email"
+            <p
               className="mb-1 block text-right text-sm font-medium text-black"
             >
               אימייל
-            </label>
+            </p>
 
             <input
               id="email"
@@ -56,12 +55,11 @@ export default function AddUser() {
           </div>
 
           <div>
-            <label
-              htmlFor="password"
+            <p
               className="mb-1 block text-right text-sm font-medium text-black"
             >
               סיסמה
-            </label>
+            </p>
 
             <input
               id="password"
@@ -87,15 +85,7 @@ export default function AddUser() {
           </button>
         </form>
 
-        <p className="mt-5 text-center text-sm text-black">
-          לעמוד
-          <Link
-            to="/login"
-            className="mr-1 font-semibold text-black underline"
-          >
-            התחברות
-          </Link>
-        </p>
+        
       </div>
     </div>
   );
