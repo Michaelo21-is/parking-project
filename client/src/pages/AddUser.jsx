@@ -1,10 +1,13 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { signUpRequest } from "../api/signup";
 
 export default function AddUser() {
   const [form, setForm] = useState({
+    fullName:"",
     email: "",
     password: "",
+    city:""
   });
 
   const [loading, setLoading] = useState(false);
@@ -14,8 +17,9 @@ export default function AddUser() {
     setLoading(true);
 
     try {
-      // API call
+      await signUpRequest(form);
       console.log("Successfully saved user");
+      alert("משתמש נוצר בהצלחה");
     } catch (error) {
       console.error(error);
       alert("נכשל ביצירת המשתמש, אנא נסה שוב");
@@ -32,6 +36,29 @@ export default function AddUser() {
         </h1>
 
         <form className="space-y-4" onSubmit={handleOnSubmit}>
+          
+          <div>
+            <p
+              className="mb-1 block text-right text-sm font-medium text-black"
+            >
+              שם מלא 
+            </p>
+
+            <input
+              id="fullName"
+              type="text"
+              required
+              dir="rtl"
+              value={form.fullName}
+              onChange={(e) =>
+                setForm((prev) => ({
+                  ...prev,
+                  fullName: e.target.value,
+                }))
+              }
+              className="w-full rounded-md border border-black bg-white px-3 py-2 text-black outline-none focus:ring-2 focus:ring-black"
+            />
+          </div>
           <div>
             <p
               className="mb-1 block text-right text-sm font-medium text-black"
@@ -70,6 +97,28 @@ export default function AddUser() {
                 setForm((prev) => ({
                   ...prev,
                   password: e.target.value,
+                }))
+              }
+              className="w-full rounded-md border border-black bg-white px-3 py-2 text-black outline-none focus:ring-2 focus:ring-black"
+            />
+          </div>
+          <div>
+            <p
+              className="mb-1 block text-right text-sm font-medium text-black"
+            >
+              עיר
+            </p>
+
+            <input
+              id="city"
+              type="text"
+              required
+              dir="rtl"
+              value={form.city}
+              onChange={(e) =>
+                setForm((prev) => ({
+                  ...prev,
+                  city: e.target.value,
                 }))
               }
               className="w-full rounded-md border border-black bg-white px-3 py-2 text-black outline-none focus:ring-2 focus:ring-black"

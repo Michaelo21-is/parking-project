@@ -34,18 +34,17 @@ export default function App() {
     try {
       const responseData = await getParkingByCity(searchCityName);
 
+
       const parkingLots = responseData.map((parkingLot) => ({
       lotId: parkingLot._id,
       name: parkingLot.name,
       }));
 
-     console.log("Parking lots:", parkingLots);
 
       setVisibleParkDetails({
         [normalizedCityName]: parkingLots,
       });
 
-      // setting up the city information
       setSuggestedCity([]);
     } catch (e) {
       const errorMessage = e.response?.data?.error;
