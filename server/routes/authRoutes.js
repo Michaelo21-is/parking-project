@@ -1,7 +1,7 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
-import { protect } from '../middleware/auth.js';
+import { protect, authorize } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -18,7 +18,7 @@ const sendAuth = (res, user, status) => {
         maxAge: 7 * 24 * 60 * 60 * 1000
     });
     res.status(status).json({
-        user: { id: user._id, fullName: user.fullName, email: user.email, city: user.city }
+        user: { id: user._id, fullName: user.fullName, email: user.email, city: user.city, role: user.role }
     });
 };
 
@@ -36,12 +36,15 @@ router.post('/login', async (req, res) => {
     sendAuth(res, user, 200);
 });
 
-// Lets an already-authenticated user create another user account.
+// Lets an admin create another user account (admin or worker).
 // Does not log the new user in — just confirms creation.
-router.post('/signup', protect, async (req, res) => {
-    const { fullName, email, password, city } = req.body;
+router.post('/signup', protect, authorize('admin'), async (req, res) => {
+    const { fullName, email, password, city, role } = req.body;
     if (!fullName || !email || !password || !city) {
         return res.status(400).json({ error: "Missing 'fullName', 'email', 'password' or 'city'" });
+    }
+    if (role && !['admin', 'worker'].includes(role)) {
+        return res.status(400).json({ error: "Invalid 'role'" });
     }
 
     const existing = await User.findOne({ email });
@@ -49,9 +52,9 @@ router.post('/signup', protect, async (req, res) => {
         return res.status(409).json({ error: "A user with this email already exists" });
     }
 
-    const user = await User.create({ fullName, email, password, city });
+    const user = await User.create({ fullName, email, password, city, role });
     res.status(202).json({
-        user: { id: user._id, fullName: user.fullName, email: user.email, city: user.city }
+        user: { id: user._id, fullName: user.fullName, email: user.email, city: user.city, role: user.role }
     });
 });
 
@@ -66,7 +69,7 @@ router.post('/logout', (req, res) => {
 router.get('/me', protect, (req, res) => {
     const { user } = req;
     res.json({
-        user: { id: user._id, fullName: user.fullName, email: user.email, city: user.city }
+        user: { id: user._id, fullName: user.fullName, email: user.email, city: user.city, role: user.role }
     });
 });
 
