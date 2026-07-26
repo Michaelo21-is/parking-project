@@ -1,155 +1,147 @@
-import { useState } from "react";
-import { Link } from "react-router"
+import ActionCard from "../Components/MangeComponent/ActionCard";
+import { signOutRequest } from "../api/signOut";
+import { useNavigate, Link } from "react-router-dom";
+
+const actions = [
+  {
+    to: "/add-user",
+    title: "הוספת משתמש",
+    desc: "יצירת חשבון משתמש חדש למערכת",
+    icon: (
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={1.5}
+        d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"
+      />
+    ),
+  },
+  {
+    to: "/add-park",
+    title: "הוספת חניון",
+    desc: "הוספת חניון חדש למערכת, כולל קומות ומספר מקומות חניה",
+    icon: (
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={1.5}
+        d="M12 4v16m8-8H4"
+      />
+    ),
+  },
+  {
+    to: "/edit-parking",
+    title: "עריכת חניון",
+    desc: "עדכון הפרטים של חניון קיים במערכת",
+    icon: (
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={1.5}
+        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+      />
+    ),
+  },
+  {
+    to: "/remove-parking",
+    title: "הסרת חניון",
+    desc: "מחיקת חניון מהמערכת באופן סופי",
+    danger: true,
+    note: "פעולה בלתי הפיכה",
+    icon: (
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={1.5}
+        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+      />
+    ),
+  },
+];
+
+
+
+const signOutIcon = (
+  <path
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    strokeWidth={1.5}
+    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+  />
+);
+
+
 
 export default function ManagementPage() {
-  const [parkingForm, setParkingForm] = useState({
-    name: "",
-    city: "",
-    floor: 0,
-    numberOfSpaces: 0,
-  });
-  const [loading, setLoading] = useState(false);
-
-  async function handleOnSubmit(e){
-    e.preventDefault()
-    setLoading(true);
-    // api call
-    setLoading(false);
+  const navigate = useNavigate();
+  async function handleOnSignOut(){
+    try {
+      await signOutRequest();
+      navigate("/");
+    } catch (error) {
+      console.error("sign out request failed: ", error);
+      alert("ההתנתקות נכשלה, אנא נסה שוב");
+    }
   }
-
   return (
-    <div className="flex min-h-screen items-center justify-center bg-white px-4">
-      <Link
-        className="absolute top-6 left-6 rounded-2xl bg-black px-4 py-3 text-xl font-semibold text-white cursor-pointer"
-        to = "/"
-      >
-        חזרה
-      </Link>
-      <Link
-        className="absolute top-6 right-6 rounded-2xl bg-black px-4 py-3 text-xl font-semibold text-white cursor-pointer"
-        to = "/add-user"
-      >
-        הוספת משתמש
-      </Link>
+    <div dir="rtl" className="flex min-h-dvh flex-col bg-canvas">
 
-      <div className="w-full max-w-md rounded-xl border border-black bg-white p-8 shadow-sm">
-        <h1 className="mb-6 text-center text-2xl font-bold text-black">
-          הוספת חניון
-        </h1>
+      <header className="sticky top-0 z-20 border-b border-border bg-surface/85 backdrop-blur-sm">
+        <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
+          <Link to={"/"}
+          className="flex items-center gap-2 text-sm font-semibold text-text-primary sm:text-base">
+            <span className="flex h-9 w-9 items-center justify-center rounded-control bg-primary text-on-primary">
+              <svg
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 11h2.5a2.5 2.5 0 000-5H12v11M4 5.5A2.5 2.5 0 016.5 3h11A2.5 2.5 0 0120 5.5v13a2.5 2.5 0 01-2.5 2.5h-11A2.5 2.5 0 014 18.5v-13z"
+                />
+              </svg>
+            </span>
+            חניה טק
+          </Link>
 
-        <form className="space-y-4" onSubmit={handleOnSubmit}>
-          <div>
-            <p
-              className="mb-1 block text-right text-sm font-medium text-black"
-            >
-              שם חניון
+          <span className="rounded-full border border-border bg-surface-muted px-3 py-1 text-xs font-semibold text-text-muted sm:text-sm">
+            פאנל ניהול
+          </span>
+        </div>
+      </header>
+
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
+        <div className="animate-fade-in">
+          <div className="mb-8 sm:mb-10">
+            <h1 className="text-2xl font-bold tracking-tight text-text-primary sm:text-3xl">
+              פאנל ניהול
+            </h1>
+            <p className="mt-1.5 text-sm text-text-muted sm:text-base">
+              ברוך הבא, בחר פעולה מתוך הרשימה
             </p>
-
-            <input
-              dir="rtl"
-              id="name"
-              type="text"
-              required
-              value={parkingForm.name}
-              onChange={(e) =>
-                setParkingForm((prev) => ({
-                  ...prev,
-                  name: e.target.value,
-                }))
-              }
-              className="w-full rounded-md border border-black bg-white px-3 py-2 text-black outline-none focus:ring-2 focus:ring-black"
-            />
           </div>
 
-          <div>
-            <p
-              className="mb-1 block text-right text-sm font-medium text-black"
-            >
-              שם עיר
-            </p>
+          <div className="grid gap-4 sm:grid-cols-2 sm:gap-5 xl:grid-cols-4">
+            {actions.map((action) => (
+              <ActionCard key={action.to} {...action} />
+            ))}
 
-            <input
-              id="whereIsKnownFrom"
-              dir="rtl"
-              type="text"
-              required
-              value={parkingForm.city}
-              onChange={(e) =>
-                setParkingForm((prev) => ({
-                  ...prev,
-                  city: e.target.value,
-                }))
-              }
-              className="mb-2 w-full rounded-md border border-black bg-white px-3 py-2 text-black outline-none focus:ring-2 focus:ring-black"
+            <ActionCard
+              title="התנתקות"
+              desc="יציאה מאובטחת מחשבון הניהול"
+              icon={signOutIcon}
+              danger
+              cta="התנתק"
+              onClick={handleOnSignOut}
             />
           </div>
-
-          <div>
-            <p
-              className="mb-1 block text-right text-sm font-medium text-black"
-            >
-              מספר קומות
-            </p>
-
-            <input
-              id="whereIsKnownFrom"
-              dir="ltr"
-              type="number"
-              required
-              value={parkingForm.floor}
-              onChange={(e) =>
-                setParkingForm((prev) => ({
-                  ...prev,
-                  floor: e.target.value,
-                }))
-              }
-              className="mb-2 w-full rounded-md border border-black
-               bg-white px-3 py-2 text-black outline-none focus:ring-2
-                focus:ring-black appearance-none
-                [&::-webkit-inner-spin-button]:appearance-none
-                [&::-webkit-outer-spin-button]:appearance-none"
-            />
-          </div>
-
-          <div>
-            <p
-              className="mb-1 block text-right text-sm font-medium text-black"
-            >
-              מספר מקומות חניה בחניון
-            </p>
-
-            <input
-              id="whereIsKnownFrom"
-              dir="ltr"
-              type="number"
-              required
-              value={parkingForm.numberOfSpaces}
-              onChange={(e) =>
-                setParkingForm((prev) => ({
-                  ...prev,
-                  numberOfSpaces: e.target.value,
-                }))
-              }
-              className="mb-2 w-full rounded-md border border-black bg-white px-3 py-2
-               text-black outline-none focus:ring-2 focus:ring-black
-               appearance-none
-               [&::-webkit-inner-spin-button]:appearance-none
-              [&::-webkit-outer-spin-button]:appearance-none
-              "
-            />
-          </div>
-
-          
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-md bg-black px-4 py-3 font-semibold text-white disabled:opacity-60"
-          >
-            {loading ? "טוען ....." : "הוספת חניון"}
-          </button>
-        </form>
-      </div>
-      </div>
+        </div>
+      </main>
+    </div>
   );
 }

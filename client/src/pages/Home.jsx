@@ -9,7 +9,7 @@ import ShowParking from "../Components/HomeComponent/ShowParking";
 import { autoCompleteCityRequest } from "../api/autoCompleteCity";
 
 export default function App() {
-  
+
 
   const [searchCityName, setSearchCityName] = useState("");
   const [loading, setLoading] = useState(false);
@@ -17,7 +17,8 @@ export default function App() {
   const [suggestedCity, setSuggestedCity] = useState([]);
 
   const [parkDeatils, setParkDeatils] = useState({});
-  const [visibleParkDetails, setVisibleParkDetails] = useState({});
+  const [visibleParkDetails, setVisibleParkDetails] = useState({}); // need it for handle on submit
+
 
   // geting park info through city search
   async function handleOnSubmit() {
@@ -55,7 +56,7 @@ export default function App() {
         alert("השם של העיר לא רשום נכון");
         return;
       }
- 
+
 
       alert("משהו לא עבד טוב בשרת בבקשה תבצע את הפעולה עוד פעם");
       console.log("something went bad, error message: ", e);
@@ -64,7 +65,7 @@ export default function App() {
     }
   }
 
-  
+
 
   async function searchByState() {
     setLoading(true);
@@ -132,83 +133,161 @@ export default function App() {
 
   return (
     <div dir="rtl">
-      <div className="min-h-screen bg-white py-10">
-        <Link
-          className="absolute top-10 left-5 p-3 bg-slate-900 hover:bg-slate-700 text-white font-semibold text-md rounded-xl"
-          to={"/management"}
-        >
-          כניסה למורשים
-        </Link>
+      <div className="flex min-h-dvh flex-col bg-canvas">
 
-        <div className="max-w-4xl mx-auto px-6 mt-10">
-          <div className="mb-12 mr-25">
-            <h1 className="text-5xl font-bold text-black mb-4">
-              חני-טיק : מערכת חניה חכמה
-            </h1>
-          </div>
-
-          <div className="mb-5 flex justify-center">
-            <div className="relative w-full max-w-4xl">
-              <input
-                type="text"
-                dir="rtl"
-                placeholder="שם עיר"
-                value={searchCityName}
-                onChange={(e) => handleOnCityInput(e.target.value)}
-                className="w-full border border-gray-300 rounded px-6 py-4 text-right"
-              />
-
-              <button
-                type="button"
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                onClick={handleOnSubmit}
-              >
+        <header className="sticky top-0 z-20 border-b border-border bg-surface/85 backdrop-blur-sm">
+          <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
+            <span className="flex items-center gap-2 text-sm font-semibold text-text-primary sm:text-base">
+              <span className="flex h-9 w-9 items-center justify-center rounded-control bg-primary text-on-primary">
                 <svg
-                  xmlns="http://www.w3.org/2000/svg"
                   className="h-5 w-5"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
+                  aria-hidden="true"
                 >
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                    d="M12 11h2.5a2.5 2.5 0 000-5H12v11M4 5.5A2.5 2.5 0 016.5 3h11A2.5 2.5 0 0120 5.5v13a2.5 2.5 0 01-2.5 2.5h-11A2.5 2.5 0 014 18.5v-13z"
                   />
                 </svg>
-              </button>
+              </span>
+              חניה טק
+            </span>
 
-              {suggestedCity.length > 0 && (
-                <div className="absolute z-10 mt-2 w-full rounded border border-gray-300 bg-white shadow">
-                  {suggestedCity.map((city) => (
-                    <button
-                      key={city.id}
-                      type="button"
-                      className="block w-full px-4 py-2 text-right hover:bg-gray-100"
-                      onClick={() => {
-                        setSearchCityName(city.name);
-                        setSuggestedCity([]);
-                      }}
-                    >
-                      {city.name}
-                    </button>
-                  ))}
-                </div>
-              )}
-
-            </div>
+            <Link
+              className="inline-flex h-11 cursor-pointer items-center gap-2 rounded-control bg-text-primary px-4 text-sm font-semibold text-white shadow-card transition-all duration-200 hover:bg-primary hover:shadow-card-hover"
+              to={"/management"}
+            >
+              <svg
+                className="h-4.5 w-4.5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                />
+              </svg>
+              כניסה למורשים
+            </Link>
           </div>
-          <div className="mt-4">
-            <h2 className="text-bold text-2xl font-bold">
-              רשימת ערים
-            </h2>
+        </header>
+
+        <main className="mx-auto w-full max-w-5xl flex-1 px-4 pt-10 pb-16 sm:px-6 sm:pt-14">
+          <div className="animate-fade-in">
+            <div className="mb-8 max-w-2xl sm:mb-10">
+              <h1 className="text-3xl font-bold leading-tight tracking-tight text-text-primary sm:text-4xl lg:text-5xl">
+                חניה טק : מערכת חניה חכמה
+              </h1>
+            </div>
+
+            <div className="mb-10 sm:mb-12">
+              <div className="relative w-full max-w-2xl">
+                <input
+                  type="text"
+                  dir="rtl"
+                  placeholder="שם עיר"
+                  value={searchCityName}
+                  onChange={(e) => handleOnCityInput(e.target.value)}
+                  className="h-14 w-full rounded-card border border-border bg-surface pr-5 pl-16 text-base text-text-primary shadow-card transition-colors duration-200 outline-none placeholder:text-text-muted hover:border-border-strong focus:border-primary focus:ring-4 focus:ring-primary/15"
+                />
+
+                <button
+                  type="button"
+                  aria-label="חיפוש"
+                  className="absolute left-2 top-1/2 flex h-11 w-11 -translate-y-1/2 cursor-pointer items-center justify-center rounded-control bg-primary text-on-primary transition-colors duration-200 hover:bg-primary-700"
+                  onClick={handleOnSubmit}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    aria-hidden="true"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                    />
+                  </svg>
+                </button>
+
+                {suggestedCity.length > 0 && (
+                  <div className="absolute z-30 mt-2 w-full overflow-hidden rounded-card border border-border bg-surface py-1 shadow-popover">
+                    {suggestedCity.map((city) => (
+                      <button
+                        key={city.id}
+                        type="button"
+                        className="flex w-full cursor-pointer items-center gap-2.5 px-4 py-3 text-right text-base text-text-secondary transition-colors duration-150 hover:bg-primary-50 hover:text-primary"
+                        onClick={() => {
+                          setSearchCityName(city.name);
+                          setSuggestedCity([]);
+                        }}
+                      >
+                        <svg
+                          className="h-4.5 w-4.5 shrink-0 text-text-muted"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          aria-hidden="true"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={1.5}
+                            d="M17.657 16.657L13.414 20.9a2 2 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                          />
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={1.5}
+                            d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                          />
+                        </svg>
+                        {city.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+              </div>
+            </div>
+
+            <section>
+              <h2 className="flex items-center gap-2 border-b border-border pb-3 text-xl font-bold tracking-tight text-text-primary sm:text-2xl">
+                <svg
+                  className="h-5 w-5 text-primary"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                  />
+                </svg>
+                רשימת ערים
+              </h2>
               <ShowParking parkDetails={visibleParkDetails}/>
-            </div>
+            </section>
           </div>
+        </main>
 
-          {loading && <Loading />}
-        </div>
+        {loading && <Loading />}
       </div>
+    </div>
   );
 }

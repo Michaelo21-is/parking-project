@@ -10,7 +10,6 @@ export async function signUpRequest(form) {
       email: form.email,
       password: form.password,
       city: form.city,
-
     },
     {
       withCredentials: true,

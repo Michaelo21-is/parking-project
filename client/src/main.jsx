@@ -8,6 +8,9 @@ import ManagementPage from "./pages/Management.jsx";
 import ProtectedRoute from "./Components/ProtectedRoute.jsx";
 import AddUser from "./pages/AddUser.jsx";
 import Login from "./pages/Login.jsx";
+import AddParkPage from "./pages/AddPark.jsx";
+import EditParkingPage from "./pages/editParking.jsx";
+import RemoveParkPage from "./pages/RemovePark.jsx";
 
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 
@@ -25,6 +28,30 @@ const router = createBrowserRouter([
     element: (
       <ProtectedRoute>
         <ManagementPage />
+      </ProtectedRoute>
+    )
+  },
+  {
+    path: "/add-park",
+    element: (
+      <ProtectedRoute>
+        <AddParkPage />
+      </ProtectedRoute>
+    )
+  },
+  {
+    path: "/edit-parking",
+    element: (
+      <ProtectedRoute>
+        <EditParkingPage/>
+      </ProtectedRoute>
+    )
+  },
+  {
+    path: "remove-parking",
+    element: (
+      <ProtectedRoute>
+        <RemoveParkPage/>
       </ProtectedRoute>
     )
   },
