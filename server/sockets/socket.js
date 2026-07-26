@@ -13,21 +13,13 @@ export const initSocket = (httpServer) => {
     io.on('connection', (socket) => {
         console.log(`Socket connected: ${socket.id}`);
 
-        socket.on('joinLot', (lotId) => {
+        const { lotId, floor } = socket.handshake.query;
+        if (lotId) {
             socket.join(`lot:${lotId}`);
-        });
-
-        socket.on('leaveLot', (lotId) => {
-            socket.leave(`lot:${lotId}`);
-        });
-
-        socket.on('joinFloor', ({ lotId, floor }) => {
-            socket.join(`lot:${lotId}:floor:${floor}`);
-        });
-
-        socket.on('leaveFloor', ({ lotId, floor }) => {
-            socket.leave(`lot:${lotId}:floor:${floor}`);
-        });
+            if (floor) {
+                socket.join(`lot:${lotId}:floor:${floor}`);
+            }
+        }
 
         socket.on('disconnect', () => {
             console.log(`Socket disconnected: ${socket.id}`);
