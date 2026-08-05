@@ -8,14 +8,21 @@ const router = express.Router();
 const signToken = (user) =>
     jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN || '7d' });
 
-// Sets the JWT as an httpOnly cookie and returns the user
+// Sets the JWT as an httpOnly cookie, plus a non-httpOnly cookie with
+// non-sensitive profile info (role/city) the frontend can read directly for
+// UI rendering without an extra /auth/me round trip. The real session cookie
+// (`token`) stays httpOnly — only cosmetic data goes in `userInfo`.
 const sendAuth = (res, user, status) => {
     const token = signToken(user);
-    res.cookie('token', token, {
-        httpOnly: true,
+    const cookieOpts = {
         sameSite: 'lax',
         secure: process.env.NODE_ENV === 'production',
         maxAge: 7 * 24 * 60 * 60 * 1000
+    };
+    res.cookie('token', token, { ...cookieOpts, httpOnly: true });
+    res.cookie('userInfo', JSON.stringify({ id: user._id, city: user.city, role: user.role }), {
+        ...cookieOpts,
+        httpOnly: false
     });
     res.status(status).json({
         user: { id: user._id, fullName: user.fullName, email: user.email, city: user.city, role: user.role }
@@ -60,6 +67,7 @@ router.post('/signup', protect, authorize('admin'), async (req, res) => {
 
 router.post('/logout', (req, res) => {
     res.clearCookie('token');
+    res.clearCookie('userInfo');
     res.json({ message: "Logged out" });
 });
 

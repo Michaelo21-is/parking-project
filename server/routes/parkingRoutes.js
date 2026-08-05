@@ -2,22 +2,9 @@ import express from 'express';
 import City from '../models/City.js';
 import ParkingLot from '../models/ParkingLot.js';
 import ParkingSpot from '../models/ParkingSpot.js';
+import { buildLotView } from '../services/lotView.js';
 
 const router = express.Router();
-
-const mapSpot = spot => ({
-    spot: spot.spotNumber,
-    floor: spot.floor,
-    status: spot.status,
-    type: spot.type
-});
-
-const floorsFromSpots = spots => [...new Set(spots.map(spot => spot.floor))].sort((a, b) => a - b);
-
-const getFloors = async lotId => {
-    const floors = await ParkingSpot.distinct('floor', { parkingLot: lotId });
-    return floors.sort((a, b) => a - b);
-};
 
 // Search by district -> cities in that district, each mapped to its parking lot names
 router.get('/district', async (req, res) => {
@@ -60,14 +47,16 @@ router.get('/search', async (req, res) => {
     }
 
     const results = await Promise.all(lots.map(async lot => {
-        const spots = await ParkingSpot.find({ parkingLot: lot._id, ...spotFilter });
+        const matchedSpotCount = await ParkingSpot.countDocuments({ parkingLot: lot._id, ...spotFilter });
+        const freeSpotCount = await ParkingSpot.countDocuments({ parkingLot: lot._id, ...spotFilter, status: 'free' });
         return {
             lotId: lot._id,
             city: lot.city?.name,
             parkingName: lot.name,
             address: lot.address,
-            spotCount: spots.filter(spot => spot.status === 'free').length,
-            matchedSpotCount: spots.length
+            totalSpots: lot.spotCount,
+            freeSpotCount,
+            matchedSpotCount
         };
     }));
 
@@ -106,20 +95,23 @@ router.get('/city', async (req, res) => {
 
     const lots = await ParkingLot.find({ city: city._id });
     const responseData = await Promise.all(lots.map(async lot => {
-        const spots = await ParkingSpot.find({ parkingLot: lot._id });
+        const freeSpotCount = await ParkingSpot.countDocuments({ parkingLot: lot._id, status: 'free' });
         return {
             lotId: lot._id,
+            city: city.name,
             parkingName: lot.name,
             address: lot.address,
-            spotCount: spots.filter(spot => spot.status === 'free').length
+            totalSpots: lot.spotCount,
+            freeSpotCount
         };
     }));
 
     res.json(responseData);
 });
 
-// Single parking lot within a city. Without 'floor', returns all floors' spots.
-// With 'floor', returns only the free-spot counts by type (regular/disabled/dean) on that floor.
+// Single parking lot within a city. Without 'floor', spots/freeSpots cover the
+// whole lot. With 'floor', they're scoped to that floor. Same response shape
+// either way — see services/lotView.js.
 router.get('/lot', async (req, res) => {
     const { cityName, lotName, floor } = req.query;
     if (!cityName || !lotName) {
@@ -136,33 +128,8 @@ router.get('/lot', async (req, res) => {
         return res.status(404).json({ error: "Parking lot not found in the specified city" });
     }
 
-    if (floor === undefined || floor === null || floor === '') {
-        const spots = await ParkingSpot.find({ parkingLot: parkingLot._id });
-        return res.json({
-            lotId: parkingLot._id,
-            parkingName: parkingLot.name,
-            address: parkingLot.address,
-            spotCount: parkingLot.spotCount,
-            floors: floorsFromSpots(spots),
-            spots: spots.map(mapSpot)
-        });
-    }
-
-    const floorSpots = await ParkingSpot.find({ parkingLot: parkingLot._id, floor: Number(floor) });
-    const freeCounts = { regular: 0, disabled: 0, dean: 0 };
-    floorSpots.forEach(spot => {
-        if (spot.status === 'free' && freeCounts[spot.type] !== undefined) {
-            freeCounts[spot.type]++;
-        }
-    });
-
-    res.json({
-        lotId: parkingLot._id,
-        parkingName: parkingLot.name,
-        floor: Number(floor),
-        floors: await getFloors(parkingLot._id),
-        freeSpots: freeCounts
-    });
+    const floorNum = floor === undefined || floor === null || floor === '' ? undefined : Number(floor);
+    res.json(await buildLotView(parkingLot, { floor: floorNum, cityName: city.name }));
 });
 
 export default router;
