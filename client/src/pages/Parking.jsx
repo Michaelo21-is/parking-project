@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { io } from "socket.io-client";
 import { getParkingInfo } from "../api/getParkingInfo";
+import getParkingByFloor from "../api/getParkingByFloor";
 import Loading from "../Components/Loading";
 
 export default function Parking() {
@@ -24,16 +25,25 @@ export default function Parking() {
     sumOfFloors:[],
   });
 
+  async function loadPark(lotid){
+     const responseData =  await getParkingInfo(lotid);
+      setParkingDeatils({
+        disableSum: responseData.freeSpots.disabled,
+        deanSum: responseData.freeSpots.dean,
+        regulaerSum: responseData.freeSpots.regular,
+        sumOfFloors: responseData.floors,
+      });
+  }
+
+  
 
   useEffect(() => {
     async function initalPage(){
       if (!lotid || !apiBaseUrl) {
         return;
       }
-
-      const responseData =  await getParkingInfo(cityName, parkName, null);
-
-      console.log("response from server: \n", responseData);
+      
+     await loadPark(lotid);
 
       const socket = io(apiBaseUrl);
       socketRef.current = socket;
@@ -55,9 +65,20 @@ export default function Parking() {
 
   useEffect(() => {
     async function changeFloor(){
-      const responseData = await getParkingInfo(cityName, parkName, changeFloor)
+      if(currentFloor === null){
+        await loadPark(lotid);
+        return;
+      };
+      const responseData = await getParkingByFloor(currentFloor, cityName, parkName);
+       setParkingDeatils((previousDetails) => ({
+        ...previousDetails,
+        disableSum: responseData.freeSpots.disabled,
+        deanSum: responseData.freeSpots.dean,
+        regulaerSum: responseData.freeSpots.regular,
+      }));
       console.log("response Data from changing floor: ", responseData);
     }
+    changeFloor();
   }, [currentFloor]);
 
 
@@ -253,23 +274,51 @@ export default function Parking() {
           </section>
 
           <section className="mt-8 rounded-card border border-border bg-surface p-5 shadow-card sm:mt-10 sm:p-6">
-            <p className="flex items-center gap-2 text-sm font-semibold text-text-secondary sm:text-base">
-              <svg
-                className="h-5 w-5 shrink-0 text-primary"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                  d="M15.042 21.672L13.684 16.6m0 0l-2.51 2.225.569-9.47 5.227 7.917-3.286-.672zM12 2.25V4.5m5.834.166l-1.591 1.591M20.25 10.5H18M7.757 14.743l-1.59 1.59M6 10.5H3.75m4.007-4.243l-1.59-1.59"
-                />
-              </svg>
-              לחץ על קומה כדי להחליף קומה
-            </p>
+            <div className="flex min-h-11 flex-wrap items-center justify-between gap-3">
+              <p className="flex items-center gap-2 text-sm font-semibold text-text-secondary sm:text-base">
+                <svg
+                  className="h-5 w-5 shrink-0 text-primary"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M15.042 21.672L13.684 16.6m0 0l-2.51 2.225.569-9.47 5.227 7.917-3.286-.672zM12 2.25V4.5m5.834.166l-1.591 1.591M20.25 10.5H18M7.757 14.743l-1.59 1.59M6 10.5H3.75m4.007-4.243l-1.59-1.59"
+                  />
+                </svg>
+                לחץ על קומה כדי להחליף קומה
+              </p>
+
+              {currentFloor !== null && (
+                <button
+                  type="button"
+                  onClick={() => setCurrentFloor(null)}
+                  disabled={loading}
+                  aria-label="איפוס בחירת קומה והצגת כל החניון"
+                  className="inline-flex h-11 shrink-0 animate-fade-in touch-manipulation cursor-pointer items-center justify-center gap-2 rounded-control border border-danger/25 bg-danger-50 px-4 text-sm font-semibold text-danger transition-all duration-200 hover:border-danger hover:bg-danger hover:text-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-danger/25 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50"
+                >
+                  <svg
+                    className="h-4 w-4 shrink-0"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    aria-hidden="true"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                  איפוס קומה
+                </button>
+              )}
+            </div>
 
             <div className="mt-4 flex flex-wrap gap-2.5">
               {parkingDeatils.sumOfFloors.map((floor) => (

@@ -5,7 +5,6 @@ import "./index.css";
 import App from "./pages/Home.jsx";
 import Parking from "./pages/Parking.jsx";
 import ManagementPage from "./pages/Management.jsx";
-import ProtectedRoute from "./Components/ProtectedRoute.jsx";
 import AddUser from "./pages/AddUser.jsx";
 import Login from "./pages/Login.jsx";
 import AddParkPage from "./pages/AddPark.jsx";
@@ -26,41 +25,31 @@ const router = createBrowserRouter([
   { 
     path: "/management", 
     element: (
-      <ProtectedRoute>
         <ManagementPage />
-      </ProtectedRoute>
     )
   },
   {
     path: "/add-park",
     element: (
-      <ProtectedRoute>
         <AddParkPage />
-      </ProtectedRoute>
     )
   },
   {
     path: "/edit-parking",
     element: (
-      <ProtectedRoute>
         <EditParkingPage/>
-      </ProtectedRoute>
     )
   },
   {
     path: "remove-parking",
     element: (
-      <ProtectedRoute>
-        <RemoveParkPage/>
-      </ProtectedRoute>
+      <RemoveParkPage/>
     )
   },
   {
     path: "/add-user",
     element:(
-      <ProtectedRoute>
         <AddUser />
-      </ProtectedRoute>
     )
   },
   {
