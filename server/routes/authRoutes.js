@@ -1,6 +1,7 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
+import City from '../models/City.js';
 import { protect, authorize } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -12,15 +13,20 @@ const signToken = (user) =>
 // non-sensitive profile info (role/city) the frontend can read directly for
 // UI rendering without an extra /auth/me round trip. The real session cookie
 // (`token`) stays httpOnly — only cosmetic data goes in `userInfo`.
-const sendAuth = (res, user, status) => {
+const sendAuth = async (res, user, status) => {
     const token = signToken(user);
     const cookieOpts = {
         sameSite: 'lax',
         secure: process.env.NODE_ENV === 'production',
         maxAge: 7 * 24 * 60 * 60 * 1000
     };
+    const city = await City.findById(user.city).select('name');
     res.cookie('token', token, { ...cookieOpts, httpOnly: true });
-    res.cookie('userInfo', JSON.stringify({ city: user.city, role: user.role }), {
+    res.cookie('userInfo', JSON.stringify({
+        role: user.role,
+        cityId: user.city,
+        cityName: city?.name ?? null
+    }), {
         ...cookieOpts,
         httpOnly: false
     });
@@ -40,7 +46,7 @@ router.post('/login', async (req, res) => {
         return res.status(401).json({ error: "Invalid email or password" });
     }
 
-    sendAuth(res, user, 200);
+    await sendAuth(res, user, 200);
 });
 
 // Lets an admin create another user account (admin or worker).
