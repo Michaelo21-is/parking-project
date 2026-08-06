@@ -20,7 +20,7 @@ const sendAuth = (res, user, status) => {
         maxAge: 7 * 24 * 60 * 60 * 1000
     };
     res.cookie('token', token, { ...cookieOpts, httpOnly: true });
-    res.cookie('userInfo', JSON.stringify({ id: user._id, city: user.city, role: user.role }), {
+    res.cookie('userInfo', JSON.stringify({ city: user.city, role: user.role }), {
         ...cookieOpts,
         httpOnly: false
     });
