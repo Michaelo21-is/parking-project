@@ -12,6 +12,7 @@ import EditParkingPage from "./pages/editParking.jsx";
 import RemoveParkPage from "./pages/RemovePark.jsx";
 
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { ToastProvider } from "./Components/Toast/ToastProvider.jsx";
 
 const router = createBrowserRouter([
   { 
@@ -62,6 +63,8 @@ const router = createBrowserRouter([
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
-    <RouterProvider router={router} />
+    <ToastProvider>
+      <RouterProvider router={router} />
+    </ToastProvider>
   </StrictMode>
 );

@@ -52,11 +52,48 @@
 
   /* Motion — subtle tier */
   --animate-fade-in: fade-in 0.3s ease-out both;
+  --animate-scrim-in: scrim-in 0.2s ease-out both;
+  --animate-sheet-in: sheet-in 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+  --animate-panel-in: panel-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
 
   @keyframes fade-in {
     from {
       opacity: 0;
       transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  /* Modal scrim: opacity only, so the blur never repaints the whole page */
+  @keyframes scrim-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  /* Mobile: the dialog rises from the bottom edge as a sheet */
+  @keyframes sheet-in {
+    from {
+      opacity: 0;
+      transform: translateY(100%);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  /* Desktop: the dialog scales up in place from its center */
+  @keyframes panel-in {
+    from {
+      opacity: 0;
+      transform: scale(0.96) translateY(8px);
     }
     to {
       opacity: 1;

@@ -4,8 +4,10 @@ import { io } from "socket.io-client";
 import { getParkingInfo } from "../api/getParkingInfo";
 import getParkingByFloor from "../api/getParkingByFloor";
 import Loading from "../Components/Loading";
+import { useToast } from "../Components/Toast/ToastContext";
 
 export default function Parking() {
+  const { toast } = useToast();
   const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
 
   const { lotid } = useParams();
@@ -15,6 +17,7 @@ export default function Parking() {
   const cityName = searchParams.get("parkCity");
 
   const socketRef = useRef(null);
+  const socketErrorNotifiedRef = useRef(false);
 
   const [loading, setLoading] = useState(false);
   const [currentFloor, setCurrentFloor] = useState(null);
@@ -38,48 +41,113 @@ export default function Parking() {
   
 
   useEffect(() => {
-    async function initalPage(){
-      if (!lotid || !apiBaseUrl) {
-        return;
+    if (!lotid || !apiBaseUrl) {
+      return;
+    }
+
+    const socket = io(apiBaseUrl, {
+      query: {
+        lotId: lotid,
+        ...(currentFloor !== null && {
+          floor: currentFloor,
+        }),
+      },
+    });
+
+    socketRef.current = socket;
+
+    socket.on("connect", () => {
+      console.log("Socket connected:", socket.id);
+      socketErrorNotifiedRef.current = false;
+    });
+
+    socket.on("lotAvailability", (data) => {
+      console.log("Lot availability:", data);
+
+      // אם כרגע מציגים את כל החניון
+      if (currentFloor === null) {
+        setParkingDeatils((previousDetails) => ({
+          ...previousDetails,
+          regulaerSum: data.regular,
+          disableSum: data.disabled,
+          deanSum: data.dean,
+        }));
       }
-      
-     await loadPark(lotid);
+    });
 
-      const socket = io(apiBaseUrl);
-      socketRef.current = socket;
-      socket.on("connect", () => {
+    socket.on("floorAvailability", (data) => {
+      console.log("Floor availability:", data);
 
-      });
+      // אם כרגע נבחרה קומה
+      if (
+        currentFloor !== null &&
+        Number(data.floor) === Number(currentFloor)
+      ) {
+        setParkingDeatils((previousDetails) => ({
+          ...previousDetails,
+          regulaerSum: data.regular,
+          disableSum: data.disabled,
+          deanSum: data.dean,
+        }));
+      }
+    });
 
     socket.on("connect_error", (error) => {
       console.error("Socket connection error:", error.message);
+
+      if (!socketErrorNotifiedRef.current) {
+        socketErrorNotifiedRef.current = true;
+
+        toast.info("העדכון החי מנותק", {
+          description: "המספרים שמוצגים עשויים לא להתעדכן בזמן אמת",
+        });
+      }
     });
 
     return () => {
       socket.disconnect();
       socketRef.current = null;
     };
-  }
-  initalPage();
-}, [apiBaseUrl, lotid]);
+  }, [apiBaseUrl, lotid, currentFloor]);
 
   useEffect(() => {
-    async function changeFloor(){
-      if(currentFloor === null){
-        await loadPark(lotid);
-        return;
-      };
-      const responseData = await getParkingByFloor(currentFloor, cityName, parkName);
-       setParkingDeatils((previousDetails) => ({
-        ...previousDetails,
-        disableSum: responseData.freeSpots.disabled,
-        deanSum: responseData.freeSpots.dean,
-        regulaerSum: responseData.freeSpots.regular,
-      }));
-      console.log("response Data from changing floor: ", responseData);
+    async function loadParking(){
+      if(!lotid){return;}
+
+      setLoading(true);
+
+      try{
+        if(currentFloor === null){
+          await loadPark(lotid);
+          return;
+        };
+        const responseData = await getParkingByFloor(currentFloor, cityName, parkName);
+         setParkingDeatils((previousDetails) => ({
+          ...previousDetails,
+          disableSum: responseData.freeSpots.disabled,
+          deanSum: responseData.freeSpots.dean,
+          regulaerSum: responseData.freeSpots.regular,
+        }));
+        console.log("response Data from changing floor: ", responseData);
+      }
+      catch(e){
+        toast.error(
+          currentFloor === null
+            ? "טעינת נתוני החניון נכשלה"
+            : `טעינת קומה ${currentFloor} נכשלה`,
+          {
+            description: "המספרים המוצגים אינם מעודכנים, אפשר לנסות שוב",
+            action: { label: "נסה שוב", onClick: loadParking },
+          }
+        );
+        console.log("failed loading parking data: ", e);
+      }
+      finally{
+        setLoading(false);
+      }
     }
-    changeFloor();
-  }, [currentFloor]);
+    loadParking();
+  }, [currentFloor, lotid]);
 
 
 

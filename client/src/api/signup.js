@@ -9,7 +9,8 @@ export async function signUpRequest(form) {
       fullName: form.fullName,  
       email: form.email,
       password: form.password,
-      city: form.city,
+      city: form.cityId,
+      role: form.role === "admin" ? "admin" : "worker"
     },
     {
       withCredentials: true,

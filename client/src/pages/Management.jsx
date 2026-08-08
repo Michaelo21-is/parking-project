@@ -1,6 +1,9 @@
+import { useEffect, useState } from "react";
 import ActionCard from "../Components/MangeComponent/ActionCard";
 import { signOutRequest } from "../api/signOut";
 import { useNavigate, Link } from "react-router-dom";
+import extractUserDeatils from "../Components/extractUserDeatils";
+import { useToast } from "../Components/Toast/ToastContext";
 
 const actions = [
   {
@@ -74,13 +77,35 @@ const signOutIcon = (
 
 export default function ManagementPage() {
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const [userDeatils, setUserDeatils] = useState({
+    role : "",
+    cityId: "",
+    cityName:""
+  });
+  useEffect(() =>{
+    const response = extractUserDeatils();
+    console.log(response);
+    if(response === null){
+      navigate("/login");
+    }
+    setUserDeatils({
+      role: response.role,
+      cityId: response.cityId,
+      cityName: response.cityName
+    });
+  },[])
+
   async function handleOnSignOut(){
     try {
       await signOutRequest();
       navigate("/");
     } catch (error) {
       console.error("sign out request failed: ", error);
-      alert("ההתנתקות נכשלה, אנא נסה שוב");
+      toast.error("ההתנתקות נכשלה", {
+        description: "עדיין אתה מחובר למערכת, אפשר לנסות להתנתק שוב",
+        action: { label: "נסה שוב", onClick: handleOnSignOut },
+      });
     }
   }
   return (

@@ -1,19 +1,60 @@
-import { useState } from "react";
-import { Link } from "react-router"
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router"
+import extractUserDeatils from "../Components/extractUserDeatils";
+import addParking from "../api/addParking";
+import { useToast } from "../Components/Toast/ToastContext";
 
-export default function ManagementPage() {
+export default function AddPark() {
   const [parkingForm, setParkingForm] = useState({
     name: "",
-    city: "",
-    floor: 0,
-    numberOfSpaces: 0,
+    cityName: "",
+    address:"",
+    spotCount: 0,
   });
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  useEffect(() =>{
+    const response = extractUserDeatils();
+    if(response === null){
+      navigate("/login");
+    }
+    if(response.role !== "admin"){
+      toast.error("אין לך הרשאה לדף זה", {
+        description: "רק מנהל יכול להוסיף חניון חדש למערכת",
+      });
+      navigate("/mangement")
+    }
+    setParkingForm((prev) => ({
+      ...prev,
+      cityName: response.cityName,
+    }));
+  },[])
+
 
   async function handleOnSubmit(e){
     e.preventDefault()
     setLoading(true);
-    // api call
+    try{
+      await addParking(parkingForm);
+      toast.success(`החניון "${parkingForm.name}" נוסף בהצלחה`, {
+        description: `${parkingForm.spotCount} מקומות חניה ב${parkingForm.address}, ${parkingForm.cityName}`,
+      });
+      setParkingForm((prev) => ({
+        ...prev,
+        name: "",
+        address: "",
+        spotCount: 0,
+      }));
+    }
+    catch(e){
+      toast.error("הוספת החניון נכשלה", {
+        description:
+          e.response?.data?.error ??
+          "משהו השתבש בשרת, הפרטים נשמרו בטופס וניתן לנסות שוב",
+      });
+      console.log("add parking request failed: ", e);
+    }
     setLoading(false);
   }
 
@@ -96,29 +137,6 @@ export default function ManagementPage() {
               />
             </div>
 
-            <div>
-              <label
-                htmlFor="city"
-                className="mb-1.5 block text-right text-sm font-medium text-text-secondary"
-              >
-                שם עיר
-              </label>
-
-              <input
-                id="city"
-                dir="rtl"
-                type="text"
-                required
-                value={parkingForm.city}
-                onChange={(e) =>
-                  setParkingForm((prev) => ({
-                    ...prev,
-                    city: e.target.value,
-                  }))
-                }
-                className="h-12 w-full rounded-control border border-border bg-surface px-3.5 text-base text-text-primary transition-colors duration-200 outline-none hover:border-border-strong focus:border-primary focus:ring-4 focus:ring-primary/15"
-              />
-            </div>
 
             <div className="grid gap-5 sm:grid-cols-2">
               <div>
@@ -126,19 +144,19 @@ export default function ManagementPage() {
                   htmlFor="floor"
                   className="mb-1.5 block text-right text-sm font-medium text-text-secondary"
                 >
-                  מספר קומות
+                  שם רחוב ומספר רחוב
                 </label>
 
                 <input
-                  id="floor"
-                  dir="ltr"
-                  type="number"
+                  id="address"
+                  dir="rtl"
+                  type="text"
                   required
-                  value={parkingForm.floor}
+                  value={parkingForm.address}
                   onChange={(e) =>
                     setParkingForm((prev) => ({
                       ...prev,
-                      floor: e.target.value,
+                      address: e.target.value,
                     }))
                   }
                   className="h-12 w-full rounded-control border border-border
@@ -164,11 +182,11 @@ export default function ManagementPage() {
                   dir="ltr"
                   type="number"
                   required
-                  value={parkingForm.numberOfSpaces}
+                  value={parkingForm.spotCount}
                   onChange={(e) =>
                     setParkingForm((prev) => ({
                       ...prev,
-                      numberOfSpaces: e.target.value,
+                      spotCount: e.target.value,
                     }))
                   }
                   className="h-12 w-full rounded-control border border-border bg-surface px-3.5

@@ -1,16 +1,66 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { signUpRequest } from "../api/signup";
+import extractUserDeatils from "../Components/extractUserDeatils";
+import { useToast } from "../Components/Toast/ToastContext";
+
+const ROLES = [
+  {
+    value: "worker",
+    label: "עובד",
+    description: "צפייה וניהול חניות בעיר",
+    icon: (
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={1.5}
+        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+      />
+    ),
+  },
+  {
+    value: "admin",
+    label: "מנהל",
+    description: "הרשאות מלאות, כולל הוספת משתמשים",
+    icon: (
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={1.5}
+        d="M12 3l7 3v5.5c0 4.2-2.9 8.1-7 9.5-4.1-1.4-7-5.3-7-9.5V6l7-3z"
+      />
+    ),
+  },
+];
+
+const DEFAULT_ROLE = "worker";
 
 export default function AddUser() {
   const [form, setForm] = useState({
     fullName:"",
     email: "",
     password: "",
-    city:""
+    cityId:"",
+    role: DEFAULT_ROLE
   });
-
+  const [cityName, setCityName] = useState("");
   const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  useEffect(()=>{
+      const response = extractUserDeatils();
+      if(response === null){
+        navigate("/login");
+      }
+      if(response.role !== "admin"){
+        toast.error("אין לך הרשאה לדף זה", {
+          description: "רק מנהל יכול להוסיף משתמשים למערכת",
+        });
+        navigate("/mangement")
+      }
+      setForm((prev) => ({...prev, cityId: response.cityId}))
+      setCityName(response.cityName);
+  },[])
 
   async function handleOnSubmit(e) {
     e.preventDefault();
@@ -19,10 +69,26 @@ export default function AddUser() {
     try {
       await signUpRequest(form);
       console.log("Successfully saved user");
-      alert("משתמש נוצר בהצלחה");
+      toast.success(`${form.fullName} נוסף בהצלחה`, {
+        description: `נוצר משתמש עם הרשאת ${
+          form.role === "admin" ? "מנהל" : "עובד"
+        } ב${cityName}`,
+      });
+      setForm((prev) => ({
+        ...prev,
+        fullName: "",
+        email: "",
+        password: "",
+        role: DEFAULT_ROLE,
+      }));
     } catch (error) {
       console.error(error);
-      alert("נכשל ביצירת המשתמש, אנא נסה שוב");
+      toast.error("יצירת המשתמש נכשלה", {
+        description:
+          error.response?.status === 409
+            ? "כתובת האימייל הזו כבר רשומה במערכת"
+            : "משהו השתבש בשרת, הפרטים נשמרו בטופס וניתן לנסות שוב",
+      });
     } finally {
       setLoading(false);
     }
@@ -55,7 +121,7 @@ export default function AddUser() {
 
         <div className="rounded-card border border-border bg-surface p-6 shadow-card sm:p-8">
           <h1 className="mb-6 text-center text-2xl font-bold tracking-tight text-text-primary">
-            הוספת משתמש חדש
+            הוספת משתמש חדש ל{cityName}
           </h1>
 
           <form className="space-y-5" onSubmit={handleOnSubmit}>
@@ -133,30 +199,51 @@ export default function AddUser() {
               />
             </div>
 
-            <div>
-              <label
-                htmlFor="city"
-                className="mb-1.5 block text-right text-sm font-medium text-text-secondary"
-              >
-                עיר
-              </label>
+            <fieldset>
+              <legend className="mb-1.5 block text-right text-sm font-medium text-text-secondary">
+                הרשאה
+              </legend>
 
-              <input
-                id="city"
-                type="text"
-                required
-                dir="rtl"
-                autoComplete="address-level2"
-                value={form.city}
-                onChange={(e) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    city: e.target.value,
-                  }))
-                }
-                className="h-12 w-full rounded-control border border-border bg-surface px-3.5 text-base text-text-primary transition-colors duration-200 outline-none hover:border-border-strong focus:border-primary focus:ring-4 focus:ring-primary/15"
-              />
-            </div>
+              <div className="flex gap-1 rounded-control border border-border bg-surface-muted p-1">
+                {ROLES.map((role) => (
+                  <label
+                    key={role.value}
+                    className="relative flex-1 cursor-pointer"
+                  >
+                    <input
+                      type="radio"
+                      name="role"
+                      value={role.value}
+                      checked={form.role === role.value}
+                      onChange={() =>
+                        setForm((prev) => ({
+                          ...prev,
+                          role: role.value,
+                        }))
+                      }
+                      className="peer sr-only"
+                    />
+
+                    <span className="flex h-11 w-full items-center justify-center gap-2 rounded-control px-3 text-sm font-medium text-text-secondary transition-all duration-200 peer-hover:text-text-primary peer-checked:bg-surface peer-checked:font-semibold peer-checked:text-primary peer-checked:shadow-card peer-focus-visible:outline peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-primary">
+                      <svg
+                        className="h-5 w-5 shrink-0"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        aria-hidden="true"
+                      >
+                        {role.icon}
+                      </svg>
+                      {role.label}
+                    </span>
+                  </label>
+                ))}
+              </div>
+
+              <p className="mt-1.5 text-right text-sm text-text-muted">
+                {ROLES.find((role) => role.value === form.role)?.description}
+              </p>
+            </fieldset>
 
             <button
               type="submit"

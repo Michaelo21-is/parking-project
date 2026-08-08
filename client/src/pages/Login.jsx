@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom";
 import { loginRequest } from "../api/Login";
+import { useToast } from "../Components/Toast/ToastContext";
 export default function Login(){
     const [form, setForm] = useState({
         email:"",
@@ -8,6 +9,7 @@ export default function Login(){
     });
     const [loading , setLoading] = useState(false);
     const navigate = useNavigate();
+    const { toast } = useToast();
     async function handleOnSubmit(e){
         e.preventDefault();
         setLoading(true);
@@ -17,13 +19,20 @@ export default function Login(){
         }
         catch(e){
             if(e.response?.status === 400){
-                alert("missing filed");
+                toast.error("חסרים פרטים", {
+                    description: "יש למלא גם אימייל וגם סיסמה",
+                });
             }
             else if(e.response?.status === 401){
-                alert("email or password invalid")
+                toast.error("האימייל או הסיסמה שגויים", {
+                    description: "בדוק את הפרטים ונסה להתחבר שוב",
+                });
             }
             else{
-                alert("something went bad in the server please try again later.")
+                toast.error("השרת לא זמין כרגע", {
+                    description: "לא הצלחנו להשלים את ההתחברות, אפשר לנסות שוב",
+                    action: { label: "נסה שוב", onClick: () => handleOnSubmit(e) },
+                });
                 console.log("error print for login request: ", e);
             }
         }

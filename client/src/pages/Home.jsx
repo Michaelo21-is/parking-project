@@ -7,13 +7,14 @@ import { loadParkingByState } from "../api/LoadParkingByState";
 import { getStateByCoordinates } from "../api/GeoCodingApi";
 import ShowParking from "../Components/HomeComponent/ShowParking";
 import { autoCompleteCityRequest } from "../api/autoCompleteCity";
+import { useToast } from "../Components/Toast/ToastContext";
 
 export default function App() {
 
+  const { toast } = useToast();
 
   const [searchCityName, setSearchCityName] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
   const [suggestedCity, setSuggestedCity] = useState([]);
 
   const [parkDeatils, setParkDeatils] = useState({});
@@ -25,7 +26,9 @@ export default function App() {
     const normalizedCityName = searchCityName.trim(); // removing all the uncessery spaceing
 
     if (!normalizedCityName) {
-      alert("יש להזין שם עיר");
+      toast.info("יש להזין שם עיר", {
+        description: "הקלד שם עיר בשדה החיפוש כדי לראות את החניונים בה",
+      });
       return;
     }
 
@@ -53,12 +56,17 @@ export default function App() {
       console.log("printing the error message", errorMessage);
 
       if (errorMessage === "City not found") {
-        alert("השם של העיר לא רשום נכון");
+        toast.error(`לא נמצאה עיר בשם "${normalizedCityName}"`, {
+          description: "בדוק את האיות או בחר עיר מתוך ההצעות בחיפוש",
+        });
         return;
       }
 
 
-      alert("משהו לא עבד טוב בשרת בבקשה תבצע את הפעולה עוד פעם");
+      toast.error("החיפוש נכשל", {
+        description: "משהו השתבש בשרת, אפשר לנסות שוב",
+        action: { label: "נסה שוב", onClick: handleOnSubmit },
+      });
       console.log("something went bad, error message: ", e);
     } finally {
       setLoading(false);
@@ -71,7 +79,9 @@ export default function App() {
     setLoading(true);
 
     if (!navigator.geolocation) {
-      setError("Geolocation is not supported by your browser.");
+      toast.info("איתור מיקום לא נתמך בדפדפן", {
+        description: "אפשר לחפש חניונים לפי שם עיר בשדה החיפוש",
+      });
       setLoading(false);
       return;
     }
@@ -81,18 +91,27 @@ export default function App() {
         const latitude = position.coords.latitude;
         const longitude = position.coords.longitude;
 
-        const state = await getStateByCoordinates(latitude, longitude);
+        try {
+          const state = await getStateByCoordinates(latitude, longitude);
 
-        const responseData = await loadParkingByState(state);
+          const responseData = await loadParkingByState(state);
 
-        setVisibleParkDetails(responseData);
-        setParkDeatils(responseData);
-
-        setLoading(false);
-
+          setVisibleParkDetails(responseData);
+          setParkDeatils(responseData);
+        } catch (e) {
+          toast.error("לא הצלחנו לטעון חניונים באזור שלך", {
+            description: "אפשר לחפש לפי שם עיר, או לנסות שוב",
+            action: { label: "נסה שוב", onClick: searchByState },
+          });
+          console.log("failed loading parking by state: ", e);
+        } finally {
+          setLoading(false);
+        }
       },
-      (err) => {
-        setError(err.message);
+      () => {
+        toast.info("לא קיבלנו גישה למיקום", {
+          description: "חפש חניונים לפי שם עיר, או אפשר גישה למיקום בהגדרות הדפדפן",
+        });
         setLoading(false);
       }
     );
