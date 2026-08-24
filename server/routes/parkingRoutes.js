@@ -2,7 +2,7 @@ import express from 'express';
 import City from '../models/City.js';
 import ParkingLot from '../models/ParkingLot.js';
 import ParkingSpot from '../models/ParkingSpot.js';
-import { buildLotView } from '../services/lotView.js';
+import { buildLotView, countByTypeAggregate } from '../services/lotView.js';
 
 const router = express.Router();
 
@@ -49,6 +49,7 @@ router.get('/search', async (req, res) => {
     const results = await Promise.all(lots.map(async lot => {
         const matchedSpotCount = await ParkingSpot.countDocuments({ parkingLot: lot._id, ...spotFilter });
         const freeSpotCount = await ParkingSpot.countDocuments({ parkingLot: lot._id, ...spotFilter, status: 'free' });
+        const spotsByType = await countByTypeAggregate({ parkingLot: lot._id, ...spotFilter });
         return {
             lotId: lot._id,
             city: lot.city?.name,
@@ -56,6 +57,7 @@ router.get('/search', async (req, res) => {
             address: lot.address,
             totalSpots: lot.spotCount,
             freeSpotCount,
+            spotsByType,
             matchedSpotCount
         };
     }));
@@ -96,20 +98,22 @@ router.get('/city', async (req, res) => {
     const lots = await ParkingLot.find({ city: city._id });
     const responseData = await Promise.all(lots.map(async lot => {
         const freeSpotCount = await ParkingSpot.countDocuments({ parkingLot: lot._id, status: 'free' });
+        const spotsByType = await countByTypeAggregate({ parkingLot: lot._id });
         return {
             lotId: lot._id,
             city: city.name,
             parkingName: lot.name,
             address: lot.address,
             totalSpots: lot.spotCount,
-            freeSpotCount
+            freeSpotCount,
+            spotsByType
         };
     }));
 
     res.json(responseData);
 });
 
-// Single parking lot within a city. Without 'floor', spots/freeSpots cover the
+// Single parking lot within a city. Without 'floor', spots/spotsByType cover the
 // whole lot. With 'floor', they're scoped to that floor. Same response shape
 // either way — see services/lotView.js.
 router.get('/lot', async (req, res) => {

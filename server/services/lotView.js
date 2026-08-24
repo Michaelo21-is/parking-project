@@ -13,17 +13,34 @@ export const mapSpot = spot => ({
 
 export const floorsFromSpots = spots => [...new Set(spots.map(spot => spot.floor))].sort((a, b) => a - b);
 
-export const countFreeByType = spots => {
-    const counts = { regular: 0, disabled: 0, dean: 0 };
+// Free + total counts per spot type, from an already-fetched array of spots.
+export const countByType = spots => {
+    const counts = { regular: { free: 0, total: 0 }, disabled: { free: 0, total: 0 }, dean: { free: 0, total: 0 } };
     spots.forEach(spot => {
-        if (spot.status === 'free' && counts[spot.type] !== undefined) {
-            counts[spot.type]++;
-        }
+        const bucket = counts[spot.type];
+        if (!bucket) return;
+        bucket.total++;
+        if (spot.status === 'free') bucket.free++;
     });
     return counts;
 };
 
-// Builds the unified lot view. Pass `floor` to scope `spots`/`freeSpots` to one
+// Same free + total breakdown, but computed in the DB via aggregation for
+// callers that don't already have the spots loaded (e.g. list endpoints
+// that only need counts per lot, not the spots themselves).
+export const countByTypeAggregate = async (match) => {
+    const rows = await ParkingSpot.aggregate([
+        { $match: match },
+        { $group: { _id: '$type', total: { $sum: 1 }, free: { $sum: { $cond: [{ $eq: ['$status', 'free'] }, 1, 0] } } } }
+    ]);
+    const counts = { regular: { free: 0, total: 0 }, disabled: { free: 0, total: 0 }, dean: { free: 0, total: 0 } };
+    rows.forEach(row => {
+        if (counts[row._id]) counts[row._id] = { free: row.free, total: row.total };
+    });
+    return counts;
+};
+
+// Builds the unified lot view. Pass `floor` to scope `spots`/`spotsByType` to one
 // floor (the top-level `floors` list always covers the whole lot). `cityName`
 // is optional — pass it when the caller already knows it (avoids a populate).
 export const buildLotView = async (lot, { floor, cityName } = {}) => {
@@ -39,7 +56,7 @@ export const buildLotView = async (lot, { floor, cityName } = {}) => {
         totalSpots: lot.spotCount,
         floors,
         ...(floor !== undefined && { floor }),
-        freeSpots: countFreeByType(scopedSpots),
+        spotsByType: countByType(scopedSpots),
         spots: scopedSpots.map(mapSpot)
     };
 };

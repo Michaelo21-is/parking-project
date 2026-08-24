@@ -25,7 +25,7 @@ router.get('/', async (req, res) => {
 });
 
 // READ — single lot by id. Same response shape as GET /parking/lot (search by
-// city+lot name) — pass ?floor= to scope spots/freeSpots to one floor.
+// city+lot name) — pass ?floor= to scope spots/spotsByType to one floor.
 router.get('/:id', async (req, res) => {
     try {
         const lot = await ParkingLot.findById(req.params.id).populate('city', 'name');

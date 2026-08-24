@@ -1,31 +1,18 @@
-import ParkingSpot from '../models/ParkingSpot.js';
 import { getIO } from '../sockets/socket.js';
-
-const getFreeCountsByType = async (match) => {
-    const rows = await ParkingSpot.aggregate([
-        { $match: match },
-        { $group: { _id: '$type', free: { $sum: { $cond: [{ $eq: ['$status', 'free'] }, 1, 0] } } } }
-    ]);
-
-    const counts = { regular: 0, disabled: 0, dean: 0 };
-    rows.forEach(row => {
-        counts[row._id] = row.free;
-    });
-    return counts;
-};
+import { countByTypeAggregate } from './lotView.js';
 
 const emitAvailability = async (io, lotId, changedFloor) => {
-    const lotCounts = await getFreeCountsByType({ parkingLot: lotId });
+    const lotCounts = await countByTypeAggregate({ parkingLot: lotId });
     io.to(`lot:${lotId}`).emit('lotAvailability', {
         parkingLot: lotId,
-        ...lotCounts
+        spotsByType: lotCounts
     });
 
-    const floorCounts = await getFreeCountsByType({ parkingLot: lotId, floor: changedFloor });
+    const floorCounts = await countByTypeAggregate({ parkingLot: lotId, floor: changedFloor });
     io.to(`lot:${lotId}:floor:${changedFloor}`).emit('floorAvailability', {
         parkingLot: lotId,
         floor: changedFloor,
-        ...floorCounts
+        spotsByType: floorCounts
     });
 };
 
