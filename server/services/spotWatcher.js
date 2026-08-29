@@ -1,5 +1,6 @@
 import { getIO } from '../sockets/socket.js';
 import { countByTypeAggregate } from './lotView.js';
+import ParkingSpot from '../models/ParkingSpot.js';
 
 const emitAvailability = async (io, lotId, changedFloor) => {
     const lotCounts = await countByTypeAggregate({ parkingLot: lotId });
