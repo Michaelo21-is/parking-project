@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { loginRequest } from "../api/Login";
 import { useToast } from "../Components/Toast/ToastContext";
 export default function Login(){
@@ -125,6 +125,29 @@ export default function Login(){
               )}
             </button>
           </form>
+        </div>
+
+        <div className="mt-6 flex justify-center">
+          <Link
+            to="/"
+            className="inline-flex h-11 cursor-pointer items-center gap-2 rounded-control border border-border bg-surface px-4 text-sm font-semibold text-text-primary shadow-card transition-all duration-200 hover:border-primary hover:text-primary hover:shadow-card-hover"
+          >
+            <svg
+              className="h-4.5 w-4.5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              aria-hidden="true"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M9 5l7 7-7 7"
+              />
+            </svg>
+            חזרה לדף הבית
+          </Link>
         </div>
       </div>
     </div>

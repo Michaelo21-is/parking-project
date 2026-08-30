@@ -54,7 +54,8 @@ export default function RemoveParkPage(){
         }
     useEffect(() =>{
             const response = extractUserDeatils();
-            if(response.role !== "worker" && response.role !== "admin"){
+            console.log(response);
+            if(response.role !== "admin"){
                 navigate("/login");
             }
             setCityName(response.cityName);

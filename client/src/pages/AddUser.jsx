@@ -56,7 +56,7 @@ export default function AddUser() {
         toast.error("אין לך הרשאה לדף זה", {
           description: "רק מנהל יכול להוסיף משתמשים למערכת",
         });
-        navigate("/mangement")
+        navigate("/login");
       }
       setForm((prev) => ({...prev, cityId: response.cityId}))
       setCityName(response.cityName);

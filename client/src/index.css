@@ -137,3 +137,35 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* ---------------------------------------------------------------------------
+   Top-down parking lot map — Components/ParkingComponent/ParkingVisual.jsx
+   Only the textures that Tailwind utilities can't express cleanly live here;
+   spacing, color and layout stay on the components as utilities.
+--------------------------------------------------------------------------- */
+@layer components {
+  /* Asphalt surface of a floor's lot */
+  .lot-asphalt {
+    background-color: #232c3d;
+    background-image:
+      radial-gradient(circle at 18% 12%, rgb(255 255 255 / 0.06), transparent 55%),
+      radial-gradient(circle at 85% 85%, rgb(255 255 255 / 0.05), transparent 50%);
+  }
+
+  /* Dashed center marking of the driving lane between spot rows */
+  .lot-lane-line {
+    background-image: repeating-linear-gradient(
+      to left,
+      rgb(255 255 255 / 0.65) 0 20px,
+      transparent 20px 44px
+    );
+  }
+
+  /* Painted stall: white side lines + a yellow bumper line at the head */
+  .lot-stall {
+    box-shadow:
+      inset 2px 0 0 rgb(255 255 255 / 0.35),
+      inset -2px 0 0 rgb(255 255 255 / 0.35),
+      inset 0 4px 0 rgb(250 204 21 / 0.55);
+  }
+}

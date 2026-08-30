@@ -23,7 +23,7 @@ export default function AddPark() {
       toast.error("אין לך הרשאה לדף זה", {
         description: "רק מנהל יכול להוסיף חניון חדש למערכת",
       });
-      navigate("/mangement")
+      navigate("/login")
     }
     setParkingForm((prev) => ({
       ...prev,

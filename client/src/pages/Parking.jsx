@@ -5,6 +5,7 @@ import { getParkingInfo } from "../api/getParkingInfo";
 import getParkingByFloor from "../api/getParkingByFloor";
 import Loading from "../Components/Loading";
 import { useToast } from "../Components/Toast/ToastContext";
+import ParkingVisual from "../Components/ParkingComponent/ParkingVisual";
 
 export default function Parking() {
   const { toast } = useToast();
@@ -23,19 +24,30 @@ export default function Parking() {
   const [currentFloor, setCurrentFloor] = useState(null);
   const [parkingDeatils, setParkingDeatils] = useState({
     disableSum:0,
+    totalDisableSum: 0,
     deanSum:0,
+    totalDeanSum:0,
     regulaerSum:0,
+    totalRegularSum:0,
     sumOfFloors:[],
+    totalSpots: 0,
+    spots: [],
   });
 
   async function loadPark(lotid){
      const responseData =  await getParkingInfo(lotid);
+     console.log("park info", responseData);
       setParkingDeatils({
-        disableSum: responseData.freeSpots.disabled,
-        deanSum: responseData.freeSpots.dean,
-        regulaerSum: responseData.freeSpots.regular,
-        sumOfFloors: responseData.floors,
-      });
+      disableSum: responseData.spotsByType.disabled.free,
+      totalDisableSum: responseData.spotsByType.disabled.total,
+      deanSum: responseData.spotsByType.dean.free,
+      totalDeanSum: responseData.spotsByType.dean.total,
+      regulaerSum: responseData.spotsByType.regular.free,
+      totalRegularSum: responseData.spotsByType.regular.total,
+      sumOfFloors: responseData.floors,
+      totalSpots: responseData.totalSpots,
+      spots: responseData.spots,
+    });
   }
 
   
@@ -68,9 +80,13 @@ export default function Parking() {
       if (currentFloor === null) {
         setParkingDeatils((previousDetails) => ({
           ...previousDetails,
-          regulaerSum: data.regular,
-          disableSum: data.disabled,
-          deanSum: data.dean,
+          regulaerSum: data.spotsByType.regular.free,
+          totalRegularSum: data.spotsByType.regular.total,
+          disableSum: data.spotsByType.disabled.free,
+          totalDisableSum: data.spotsByType.disabled.total,
+          deanSum: data.spotsByType.dean.free,
+          totalDeanSum: data.spotsByType.dean.total,
+          spots: data.spots,
         }));
       }
     });
@@ -85,9 +101,13 @@ export default function Parking() {
       ) {
         setParkingDeatils((previousDetails) => ({
           ...previousDetails,
-          regulaerSum: data.regular,
-          disableSum: data.disabled,
-          deanSum: data.dean,
+          regulaerSum: data.spotsByType.regular.free,
+          totalRegularSum: data.spotsByType.regular.total,
+          disableSum: data.spotsByType.disabled.free,
+          totalDisableSum: data.spotsByType.disabled.total,
+          deanSum: data.spotsByType.dean.free,
+          totalDeanSum: data.spotsByType.dean.total,
+          spots: data.spots,
         }));
       }
     });
@@ -122,11 +142,16 @@ export default function Parking() {
           return;
         };
         const responseData = await getParkingByFloor(currentFloor, cityName, parkName);
+        console.log("change floor result", responseData);
          setParkingDeatils((previousDetails) => ({
           ...previousDetails,
-          disableSum: responseData.freeSpots.disabled,
-          deanSum: responseData.freeSpots.dean,
-          regulaerSum: responseData.freeSpots.regular,
+           disableSum: responseData.spotsByType.disabled.free,
+          totalDisableSum: responseData.spotsByType.disabled.total,
+          deanSum: responseData.spotsByType.dean.free,
+          totalDeanSum: responseData.spotsByType.dean.total,
+          regulaerSum: responseData.spotsByType.regular.free,
+          totalRegularSum: responseData.spotsByType.regular.total,
+          spots: responseData.spots,
         }));
         console.log("response Data from changing floor: ", responseData);
       }
@@ -152,6 +177,16 @@ export default function Parking() {
 
 
 
+
+  // ערכי תצוגה בלבד — נגזרים מה-state הקיים, בלי לשנות לוגיקה
+  const freeSpotsInView =
+    parkingDeatils.regulaerSum + parkingDeatils.disableSum + parkingDeatils.deanSum;
+  const capacityInView =
+    parkingDeatils.totalRegularSum +
+    parkingDeatils.totalDisableSum +
+    parkingDeatils.totalDeanSum;
+  const freePercentInView =
+    capacityInView > 0 ? Math.round((freeSpotsInView / capacityInView) * 100) : 0;
 
   return (
     <div dir="rtl" className="flex min-h-dvh flex-col bg-canvas">
@@ -245,99 +280,157 @@ export default function Parking() {
 
             <div className="mt-4 grid gap-4 sm:grid-cols-3 sm:gap-5">
 
-              <div className="rounded-card border border-border bg-surface p-5 shadow-card transition-shadow duration-200 hover:shadow-card-hover sm:p-6">
-                <div className="flex items-center gap-3">
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control bg-success-50 text-success">
-                    <svg
-                      className="h-6 w-6"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      aria-hidden="true"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={1.5}
-                        d="M5 17H4a1 1 0 01-1-1v-3.3a2 2 0 01.2-.87L5.4 7.2A2 2 0 017.2 6h9.6a2 2 0 011.8 1.2l2.2 4.63a2 2 0 01.2.87V16a1 1 0 01-1 1h-1M3.5 12.5h17"
-                      />
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={1.5}
-                        d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"
-                      />
-                    </svg>
-                  </span>
-                  <span className="text-base font-semibold text-text-secondary">
-                    רגיל
-                  </span>
+              <SpotTypeCard
+                label="רגיל"
+                freeSpots={parkingDeatils.regulaerSum}
+                totalSpots={parkingDeatils.totalRegularSum}
+                tone="success"
+                icon={
+                  <>
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.5}
+                      d="M5 17H4a1 1 0 01-1-1v-3.3a2 2 0 01.2-.87L5.4 7.2A2 2 0 017.2 6h9.6a2 2 0 011.8 1.2l2.2 4.63a2 2 0 01.2.87V16a1 1 0 01-1 1h-1M3.5 12.5h17"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.5}
+                      d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"
+                    />
+                  </>
+                }
+              />
+
+              <SpotTypeCard
+                label="נכה"
+                freeSpots={parkingDeatils.disableSum}
+                totalSpots={parkingDeatils.totalDisableSum}
+                tone="primary"
+                icon={
+                  <>
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.5}
+                      d="M13.5 4.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.5}
+                      d="M11 8.5V13h4l2.5 6.5M14.5 15.5a4.5 4.5 0 11-4.6-4.5"
+                    />
+                  </>
+                }
+              />
+
+              <SpotTypeCard
+                label="דיקן"
+                freeSpots={parkingDeatils.deanSum}
+                totalSpots={parkingDeatils.totalDeanSum}
+                tone="neutral"
+                icon={
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M11.48 3.5a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.562.562 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"
+                  />
+                }
+              />
+
+            </div>
+
+            <div className="mt-6 rounded-card border border-border bg-surface-muted/60 p-5 sm:mt-8 sm:p-6">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <h3 className="flex items-center gap-2 text-base font-bold tracking-tight text-text-primary sm:text-lg">
+                  <svg
+                    className="h-5 w-5 shrink-0 text-primary"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    aria-hidden="true"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.5}
+                      d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"
+                    />
+                  </svg>
+                  סיכום תפוסה
+                </h3>
+
+                <span className="rounded-full border border-border bg-surface px-3 py-1 text-xs font-semibold text-text-muted sm:text-sm">
+                  {currentFloor !== null ? `קומה ${currentFloor}` : "כל החניון"}
+                </span>
+              </div>
+
+              <div className="mt-4 flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
+                <div>
+                  <p className="sr-only">
+                    {freeSpotsInView} חניות פנויות מתוך {capacityInView} מקומות
+                  </p>
+
+                  <div
+                    dir="ltr"
+                    aria-hidden="true"
+                    className="flex items-baseline justify-end gap-1.5"
+                  >
+                    <span className="text-3xl font-bold tabular-nums tracking-tight text-text-primary sm:text-4xl">
+                      {freeSpotsInView}
+                    </span>
+                    <span className="text-xl font-semibold tabular-nums text-border-strong sm:text-2xl">
+                      /
+                    </span>
+                    <span className="text-xl font-semibold tabular-nums text-text-muted sm:text-2xl">
+                      {capacityInView}
+                    </span>
+                  </div>
+
+                  <p className="mt-1 text-xs font-medium text-text-muted sm:text-sm">
+                    חניות פנויות מתוך סך המקומות
+                    {currentFloor !== null ? " בקומה זו" : " בחניון"}
+                  </p>
                 </div>
-                <p className="mt-4 text-4xl font-bold tabular-nums tracking-tight text-text-primary sm:text-5xl">
-                  {parkingDeatils.regulaerSum}
+
+                <p className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-sm font-semibold text-text-secondary">
+                  <span
+                    className="h-2 w-2 shrink-0 rounded-full bg-primary"
+                    aria-hidden="true"
+                  />
+                  <span className="tabular-nums">{freePercentInView}% פנוי</span>
                 </p>
               </div>
 
-              <div className="rounded-card border border-border bg-surface p-5 shadow-card transition-shadow duration-200 hover:shadow-card-hover sm:p-6">
-                <div className="flex items-center gap-3">
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control bg-primary-50 text-primary">
-                    <svg
-                      className="h-6 w-6"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      aria-hidden="true"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={1.5}
-                        d="M13.5 4.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"
-                      />
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={1.5}
-                        d="M11 8.5V13h4l2.5 6.5M14.5 15.5a4.5 4.5 0 11-4.6-4.5"
-                      />
-                    </svg>
-                  </span>
-                  <span className="text-base font-semibold text-text-secondary">
-                    נכה
-                  </span>
-                </div>
-                <p className="mt-4 text-4xl font-bold tabular-nums tracking-tight text-text-primary sm:text-5xl">
-                  {parkingDeatils.disableSum}
-                </p>
+              <div
+                className="mt-4 h-2 w-full overflow-hidden rounded-full bg-border"
+                aria-hidden="true"
+              >
+                <div
+                  className="h-full w-full origin-right rounded-full bg-primary transition-transform duration-300 ease-out"
+                  style={{ transform: `scaleX(${freePercentInView / 100})` }}
+                />
               </div>
 
-              <div className="rounded-card border border-border bg-surface p-5 shadow-card transition-shadow duration-200 hover:shadow-card-hover sm:p-6">
-                <div className="flex items-center gap-3">
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control bg-surface-muted text-text-secondary">
-                    <svg
-                      className="h-6 w-6"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      aria-hidden="true"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={1.5}
-                        d="M11.48 3.5a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.562.562 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"
-                      />
-                    </svg>
-                  </span>
-                  <span className="text-base font-semibold text-text-secondary">
-                    דיקן
-                  </span>
+              <dl className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-border pt-4 text-sm">
+                <div className="flex items-center gap-2">
+                  <dt className="font-medium text-text-muted">סה״כ חניות בחניון</dt>
+                  <dd className="font-bold tabular-nums text-text-primary">
+                    {parkingDeatils.totalSpots}
+                  </dd>
                 </div>
-                <p className="mt-4 text-4xl font-bold tabular-nums tracking-tight text-text-primary sm:text-5xl">
-                  {parkingDeatils.deanSum}
-                </p>
-              </div>
-
+                <div className="flex items-center gap-2">
+                  <dt className="font-medium text-text-muted">
+                    תפוסות כרגע{currentFloor !== null ? " בקומה" : ""}
+                  </dt>
+                  <dd className="font-bold tabular-nums text-text-primary">
+                    {capacityInView - freeSpotsInView}
+                  </dd>
+                </div>
+              </dl>
             </div>
           </section>
 
@@ -423,12 +516,94 @@ export default function Parking() {
             </div>
           </section>
 
+          <ParkingVisual
+            spots={parkingDeatils.spots}
+            currentFloor={currentFloor}
+          />
+
         </div>
       </main>
 
       {loading && (
           <Loading />
       )}
+    </div>
+  );
+}
+
+
+/* אחוז תפוסה/פנויות מוצג גם בפס ההתקדמות וגם כטקסט, כדי שהמידע לא יסתמך על צבע בלבד */
+const SPOT_TYPE_TONES = {
+  success: { icon: "bg-success-50 text-success", bar: "bg-success" },
+  primary: { icon: "bg-primary-50 text-primary", bar: "bg-primary" },
+  neutral: { icon: "bg-surface-muted text-text-secondary", bar: "bg-text-secondary" },
+};
+
+function SpotTypeCard({ label, freeSpots, totalSpots, tone, icon }) {
+  const tones = SPOT_TYPE_TONES[tone] ?? SPOT_TYPE_TONES.neutral;
+  const freeRatio =
+    totalSpots > 0 ? Math.min(1, Math.max(0, freeSpots / totalSpots)) : 0;
+
+  return (
+    <div className="rounded-card border border-border bg-surface p-5 shadow-card transition-shadow duration-200 hover:shadow-card-hover sm:p-6">
+      <div className="flex items-center gap-3">
+        <span
+          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-control ${tones.icon}`}
+        >
+          <svg
+            className="h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            aria-hidden="true"
+          >
+            {icon}
+          </svg>
+        </span>
+        <span className="text-base font-semibold text-text-secondary">
+          {label}
+        </span>
+      </div>
+
+      <p className="sr-only">
+        {label}: {freeSpots} חניות פנויות מתוך {totalSpots} מקומות
+      </p>
+
+      <div
+        dir="ltr"
+        aria-hidden="true"
+        className="mt-4 flex items-baseline justify-end gap-1.5"
+      >
+        <span className="text-4xl font-bold tabular-nums tracking-tight text-text-primary sm:text-5xl">
+          {freeSpots}
+        </span>
+        <span className="text-2xl font-semibold tabular-nums text-border-strong sm:text-3xl">
+          /
+        </span>
+        <span className="text-2xl font-semibold tabular-nums text-text-muted sm:text-3xl">
+          {totalSpots}
+        </span>
+      </div>
+
+      <div
+        dir="ltr"
+        aria-hidden="true"
+        className="mt-1 flex items-center justify-end gap-1.5 text-xs font-medium text-text-muted sm:text-sm"
+      >
+        <span>פנויות</span>
+        <span className="text-border-strong">/</span>
+        <span>סה״כ</span>
+      </div>
+
+      <div
+        className="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-surface-muted"
+        aria-hidden="true"
+      >
+        <div
+          className={`h-full w-full origin-right rounded-full transition-transform duration-300 ease-out ${tones.bar}`}
+          style={{ transform: `scaleX(${freeRatio})` }}
+        />
+      </div>
     </div>
   );
 }

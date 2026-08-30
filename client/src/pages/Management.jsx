@@ -18,6 +18,7 @@ const actions = [
         d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"
       />
     ),
+    role:"admin"
   },
   {
     to: "/add-park",
@@ -31,6 +32,7 @@ const actions = [
         d="M12 4v16m8-8H4"
       />
     ),
+    role:"admin"
   },
   {
     to: "/edit-parking",
@@ -59,6 +61,7 @@ const actions = [
         d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
       />
     ),
+    role:"admin"
   },
 ];
 
@@ -88,6 +91,7 @@ export default function ManagementPage() {
     console.log(response);
     if(response === null){
       navigate("/login");
+      return;
     }
     setUserDeatils({
       role: response.role,
@@ -152,9 +156,11 @@ export default function ManagementPage() {
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2 sm:gap-5 xl:grid-cols-4">
-            {actions.map((action) => (
-              <ActionCard key={action.to} {...action} />
-            ))}
+            {actions
+              .filter((action) => !action.role || action.role === userDeatils.role)
+              .map((action) => (
+                <ActionCard key={action.to} {...action} />
+              ))}
 
             <ActionCard
               title="התנתקות"
