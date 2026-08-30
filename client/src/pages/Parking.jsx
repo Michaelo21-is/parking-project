@@ -1,0 +1,609 @@
+import { useEffect, useRef, useState } from "react";
+import { Link, useParams, useSearchParams } from "react-router-dom";
+import { io } from "socket.io-client";
+import { getParkingInfo } from "../api/getParkingInfo";
+import getParkingByFloor from "../api/getParkingByFloor";
+import Loading from "../Components/Loading";
+import { useToast } from "../Components/Toast/ToastContext";
+import ParkingVisual from "../Components/ParkingComponent/ParkingVisual";
+
+export default function Parking() {
+  const { toast } = useToast();
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
+
+  const { lotid } = useParams();
+  const [ searchParams ] = useSearchParams();
+
+  const parkName = searchParams.get("parkName");
+  const cityName = searchParams.get("parkCity");
+
+  const socketRef = useRef(null);
+  const socketErrorNotifiedRef = useRef(false);
+
+  const [loading, setLoading] = useState(false);
+  const [currentFloor, setCurrentFloor] = useState(null);
+  const [parkingDeatils, setParkingDeatils] = useState({
+    disableSum:0,
+    totalDisableSum: 0,
+    deanSum:0,
+    totalDeanSum:0,
+    regulaerSum:0,
+    totalRegularSum:0,
+    sumOfFloors:[],
+    totalSpots: 0,
+    spots: [],
+  });
+
+  async function loadPark(lotid){
+     const responseData =  await getParkingInfo(lotid);
+     console.log("park info", responseData);
+      setParkingDeatils({
+      disableSum: responseData.spotsByType.disabled.free,
+      totalDisableSum: responseData.spotsByType.disabled.total,
+      deanSum: responseData.spotsByType.dean.free,
+      totalDeanSum: responseData.spotsByType.dean.total,
+      regulaerSum: responseData.spotsByType.regular.free,
+      totalRegularSum: responseData.spotsByType.regular.total,
+      sumOfFloors: responseData.floors,
+      totalSpots: responseData.totalSpots,
+      spots: responseData.spots,
+    });
+  }
+
+  
+
+  useEffect(() => {
+    if (!lotid || !apiBaseUrl) {
+      return;
+    }
+
+    const socket = io(apiBaseUrl, {
+      query: {
+        lotId: lotid,
+        ...(currentFloor !== null && {
+          floor: currentFloor,
+        }),
+      },
+    });
+
+    socketRef.current = socket;
+
+    socket.on("connect", () => {
+      console.log("Socket connected:", socket.id);
+      socketErrorNotifiedRef.current = false;
+    });
+
+    socket.on("lotAvailability", (data) => {
+      console.log("Lot availability:", data);
+
+      // אם כרגע מציגים את כל החניון
+      if (currentFloor === null) {
+        setParkingDeatils((previousDetails) => ({
+          ...previousDetails,
+          regulaerSum: data.spotsByType.regular.free,
+          totalRegularSum: data.spotsByType.regular.total,
+          disableSum: data.spotsByType.disabled.free,
+          totalDisableSum: data.spotsByType.disabled.total,
+          deanSum: data.spotsByType.dean.free,
+          totalDeanSum: data.spotsByType.dean.total,
+          spots: data.spots,
+        }));
+      }
+    });
+
+    socket.on("floorAvailability", (data) => {
+      console.log("Floor availability:", data);
+
+      // אם כרגע נבחרה קומה
+      if (
+        currentFloor !== null &&
+        Number(data.floor) === Number(currentFloor)
+      ) {
+        setParkingDeatils((previousDetails) => ({
+          ...previousDetails,
+          regulaerSum: data.spotsByType.regular.free,
+          totalRegularSum: data.spotsByType.regular.total,
+          disableSum: data.spotsByType.disabled.free,
+          totalDisableSum: data.spotsByType.disabled.total,
+          deanSum: data.spotsByType.dean.free,
+          totalDeanSum: data.spotsByType.dean.total,
+          spots: data.spots,
+        }));
+      }
+    });
+
+    socket.on("connect_error", (error) => {
+      console.error("Socket connection error:", error.message);
+
+      if (!socketErrorNotifiedRef.current) {
+        socketErrorNotifiedRef.current = true;
+
+        toast.info("העדכון החי מנותק", {
+          description: "המספרים שמוצגים עשויים לא להתעדכן בזמן אמת",
+        });
+      }
+    });
+
+    return () => {
+      socket.disconnect();
+      socketRef.current = null;
+    };
+  }, [apiBaseUrl, lotid, currentFloor]);
+
+  useEffect(() => {
+    async function loadParking(){
+      if(!lotid){return;}
+
+      setLoading(true);
+
+      try{
+        if(currentFloor === null){
+          await loadPark(lotid);
+          return;
+        };
+        const responseData = await getParkingByFloor(currentFloor, cityName, parkName);
+        console.log("change floor result", responseData);
+         setParkingDeatils((previousDetails) => ({
+          ...previousDetails,
+           disableSum: responseData.spotsByType.disabled.free,
+          totalDisableSum: responseData.spotsByType.disabled.total,
+          deanSum: responseData.spotsByType.dean.free,
+          totalDeanSum: responseData.spotsByType.dean.total,
+          regulaerSum: responseData.spotsByType.regular.free,
+          totalRegularSum: responseData.spotsByType.regular.total,
+          spots: responseData.spots,
+        }));
+        console.log("response Data from changing floor: ", responseData);
+      }
+      catch(e){
+        toast.error(
+          currentFloor === null
+            ? "טעינת נתוני החניון נכשלה"
+            : `טעינת קומה ${currentFloor} נכשלה`,
+          {
+            description: "המספרים המוצגים אינם מעודכנים, אפשר לנסות שוב",
+            action: { label: "נסה שוב", onClick: loadParking },
+          }
+        );
+        console.log("failed loading parking data: ", e);
+      }
+      finally{
+        setLoading(false);
+      }
+    }
+    loadParking();
+  }, [currentFloor, lotid]);
+
+
+
+
+
+  // ערכי תצוגה בלבד — נגזרים מה-state הקיים, בלי לשנות לוגיקה
+  const freeSpotsInView =
+    parkingDeatils.regulaerSum + parkingDeatils.disableSum + parkingDeatils.deanSum;
+  const capacityInView =
+    parkingDeatils.totalRegularSum +
+    parkingDeatils.totalDisableSum +
+    parkingDeatils.totalDeanSum;
+  const freePercentInView =
+    capacityInView > 0 ? Math.round((freeSpotsInView / capacityInView) * 100) : 0;
+
+  return (
+    <div dir="rtl" className="flex min-h-dvh flex-col bg-canvas">
+
+      <header className="sticky top-0 z-20 border-b border-border bg-surface/85 backdrop-blur-sm">
+        <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
+          <Link to={"/"} className="flex items-center gap-2 text-sm font-semibold text-text-primary sm:text-base">
+            <span className="flex h-9 w-9 items-center justify-center rounded-control bg-primary text-on-primary">
+              <svg
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 11h2.5a2.5 2.5 0 000-5H12v11M4 5.5A2.5 2.5 0 016.5 3h11A2.5 2.5 0 0120 5.5v13a2.5 2.5 0 01-2.5 2.5h-11A2.5 2.5 0 014 18.5v-13z"
+                />
+              </svg>
+            </span>
+            חניה טק
+          </Link>
+
+          <span className="rounded-full border border-border bg-surface-muted px-3 py-1 text-xs font-semibold text-text-muted sm:text-sm">
+            מצב חניון
+          </span>
+        </div>
+      </header>
+
+      <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8 sm:px-6 sm:py-10">
+        <div className="animate-fade-in">
+
+          <div className="mb-8 flex flex-col gap-4 border-b border-border pb-6 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight text-text-primary sm:text-3xl">
+                {parkName}
+              </h1>
+              <p className="mt-1.5 flex items-center gap-1.5 text-sm text-text-muted sm:text-base">
+                <svg
+                  className="h-4 w-4 shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M17.657 16.657L13.414 20.9a2 2 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                  />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                  />
+                </svg>
+                {cityName}
+              </p>
+            </div>
+
+            {currentFloor !== null && (
+              <p className="inline-flex items-center gap-2 self-start rounded-full border border-primary/25 bg-primary-50 px-3.5 py-1.5 text-sm font-semibold text-primary sm:self-auto">
+                <svg
+                  className="h-4 w-4 shrink-0"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                  />
+                </svg>
+                <span className="tabular-nums">קומה נוכחית: {currentFloor}</span>
+              </p>
+            )}
+          </div>
+
+          <section>
+            <h2 className="text-lg font-bold tracking-tight text-text-primary sm:text-xl">
+              מספר חניות פנויות:
+            </h2>
+
+            <div className="mt-4 grid gap-4 sm:grid-cols-3 sm:gap-5">
+
+              <SpotTypeCard
+                label="רגיל"
+                freeSpots={parkingDeatils.regulaerSum}
+                totalSpots={parkingDeatils.totalRegularSum}
+                tone="success"
+                icon={
+                  <>
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.5}
+                      d="M5 17H4a1 1 0 01-1-1v-3.3a2 2 0 01.2-.87L5.4 7.2A2 2 0 017.2 6h9.6a2 2 0 011.8 1.2l2.2 4.63a2 2 0 01.2.87V16a1 1 0 01-1 1h-1M3.5 12.5h17"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.5}
+                      d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"
+                    />
+                  </>
+                }
+              />
+
+              <SpotTypeCard
+                label="נכה"
+                freeSpots={parkingDeatils.disableSum}
+                totalSpots={parkingDeatils.totalDisableSum}
+                tone="primary"
+                icon={
+                  <>
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.5}
+                      d="M13.5 4.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.5}
+                      d="M11 8.5V13h4l2.5 6.5M14.5 15.5a4.5 4.5 0 11-4.6-4.5"
+                    />
+                  </>
+                }
+              />
+
+              <SpotTypeCard
+                label="דיקן"
+                freeSpots={parkingDeatils.deanSum}
+                totalSpots={parkingDeatils.totalDeanSum}
+                tone="neutral"
+                icon={
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M11.48 3.5a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.562.562 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"
+                  />
+                }
+              />
+
+            </div>
+
+            <div className="mt-6 rounded-card border border-border bg-surface-muted/60 p-5 sm:mt-8 sm:p-6">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <h3 className="flex items-center gap-2 text-base font-bold tracking-tight text-text-primary sm:text-lg">
+                  <svg
+                    className="h-5 w-5 shrink-0 text-primary"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    aria-hidden="true"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.5}
+                      d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"
+                    />
+                  </svg>
+                  סיכום תפוסה
+                </h3>
+
+                <span className="rounded-full border border-border bg-surface px-3 py-1 text-xs font-semibold text-text-muted sm:text-sm">
+                  {currentFloor !== null ? `קומה ${currentFloor}` : "כל החניון"}
+                </span>
+              </div>
+
+              <div className="mt-4 flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
+                <div>
+                  <p className="sr-only">
+                    {freeSpotsInView} חניות פנויות מתוך {capacityInView} מקומות
+                  </p>
+
+                  <div
+                    dir="ltr"
+                    aria-hidden="true"
+                    className="flex items-baseline justify-end gap-1.5"
+                  >
+                    <span className="text-3xl font-bold tabular-nums tracking-tight text-text-primary sm:text-4xl">
+                      {freeSpotsInView}
+                    </span>
+                    <span className="text-xl font-semibold tabular-nums text-border-strong sm:text-2xl">
+                      /
+                    </span>
+                    <span className="text-xl font-semibold tabular-nums text-text-muted sm:text-2xl">
+                      {capacityInView}
+                    </span>
+                  </div>
+
+                  <p className="mt-1 text-xs font-medium text-text-muted sm:text-sm">
+                    חניות פנויות מתוך סך המקומות
+                    {currentFloor !== null ? " בקומה זו" : " בחניון"}
+                  </p>
+                </div>
+
+                <p className="inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1.5 text-sm font-semibold text-text-secondary">
+                  <span
+                    className="h-2 w-2 shrink-0 rounded-full bg-primary"
+                    aria-hidden="true"
+                  />
+                  <span className="tabular-nums">{freePercentInView}% פנוי</span>
+                </p>
+              </div>
+
+              <div
+                className="mt-4 h-2 w-full overflow-hidden rounded-full bg-border"
+                aria-hidden="true"
+              >
+                <div
+                  className="h-full w-full origin-right rounded-full bg-primary transition-transform duration-300 ease-out"
+                  style={{ transform: `scaleX(${freePercentInView / 100})` }}
+                />
+              </div>
+
+              <dl className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-border pt-4 text-sm">
+                <div className="flex items-center gap-2">
+                  <dt className="font-medium text-text-muted">סה״כ חניות בחניון</dt>
+                  <dd className="font-bold tabular-nums text-text-primary">
+                    {parkingDeatils.totalSpots}
+                  </dd>
+                </div>
+                <div className="flex items-center gap-2">
+                  <dt className="font-medium text-text-muted">
+                    תפוסות כרגע{currentFloor !== null ? " בקומה" : ""}
+                  </dt>
+                  <dd className="font-bold tabular-nums text-text-primary">
+                    {capacityInView - freeSpotsInView}
+                  </dd>
+                </div>
+              </dl>
+            </div>
+          </section>
+
+          <section className="mt-8 rounded-card border border-border bg-surface p-5 shadow-card sm:mt-10 sm:p-6">
+            <div className="flex min-h-11 flex-wrap items-center justify-between gap-3">
+              <p className="flex items-center gap-2 text-sm font-semibold text-text-secondary sm:text-base">
+                <svg
+                  className="h-5 w-5 shrink-0 text-primary"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  aria-hidden="true"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M15.042 21.672L13.684 16.6m0 0l-2.51 2.225.569-9.47 5.227 7.917-3.286-.672zM12 2.25V4.5m5.834.166l-1.591 1.591M20.25 10.5H18M7.757 14.743l-1.59 1.59M6 10.5H3.75m4.007-4.243l-1.59-1.59"
+                  />
+                </svg>
+                לחץ על קומה כדי להחליף קומה
+              </p>
+
+              {currentFloor !== null && (
+                <button
+                  type="button"
+                  onClick={() => setCurrentFloor(null)}
+                  disabled={loading}
+                  aria-label="איפוס בחירת קומה והצגת כל החניון"
+                  className="inline-flex h-11 shrink-0 animate-fade-in touch-manipulation cursor-pointer items-center justify-center gap-2 rounded-control border border-danger/25 bg-danger-50 px-4 text-sm font-semibold text-danger transition-all duration-200 hover:border-danger hover:bg-danger hover:text-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-danger/25 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-50"
+                >
+                  <svg
+                    className="h-4 w-4 shrink-0"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    aria-hidden="true"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                  איפוס קומה
+                </button>
+              )}
+            </div>
+
+            <div className="mt-4 flex flex-wrap gap-2.5">
+              {parkingDeatils.sumOfFloors.map((floor) => (
+                <button
+                  type="button"
+                  key={floor}
+                  onClick={() => setCurrentFloor(floor)}
+                  aria-pressed={Number(currentFloor) === Number(floor)}
+                  className={`inline-flex h-11 min-w-24 touch-manipulation cursor-pointer items-center justify-center gap-1.5 rounded-control border px-4 text-sm font-semibold tabular-nums transition-all duration-200 focus-visible:outline-none focus-visible:ring-4 active:scale-[0.98] ${
+                    Number(currentFloor) === Number(floor)
+                      ? "border-primary bg-primary text-on-primary shadow-card focus-visible:ring-primary/30"
+                      : "border-border bg-surface text-text-secondary hover:border-primary/50 hover:bg-primary-50 hover:text-primary focus-visible:ring-primary/25"
+                  }`}
+                >
+                  {Number(currentFloor) === Number(floor) && (
+                    <svg
+                      className="h-4 w-4 shrink-0"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      aria-hidden="true"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2.5}
+                        d="M4.5 12.75l6 6 9-13.5"
+                      />
+                    </svg>
+                  )}
+                  קומה {floor}
+                </button>
+              ))}
+            </div>
+          </section>
+
+          <ParkingVisual
+            spots={parkingDeatils.spots}
+            currentFloor={currentFloor}
+          />
+
+        </div>
+      </main>
+
+      {loading && (
+          <Loading />
+      )}
+    </div>
+  );
+}
+
+
+/* אחוז תפוסה/פנויות מוצג גם בפס ההתקדמות וגם כטקסט, כדי שהמידע לא יסתמך על צבע בלבד */
+const SPOT_TYPE_TONES = {
+  success: { icon: "bg-success-50 text-success", bar: "bg-success" },
+  primary: { icon: "bg-primary-50 text-primary", bar: "bg-primary" },
+  neutral: { icon: "bg-surface-muted text-text-secondary", bar: "bg-text-secondary" },
+};
+
+function SpotTypeCard({ label, freeSpots, totalSpots, tone, icon }) {
+  const tones = SPOT_TYPE_TONES[tone] ?? SPOT_TYPE_TONES.neutral;
+  const freeRatio =
+    totalSpots > 0 ? Math.min(1, Math.max(0, freeSpots / totalSpots)) : 0;
+
+  return (
+    <div className="rounded-card border border-border bg-surface p-5 shadow-card transition-shadow duration-200 hover:shadow-card-hover sm:p-6">
+      <div className="flex items-center gap-3">
+        <span
+          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-control ${tones.icon}`}
+        >
+          <svg
+            className="h-6 w-6"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            aria-hidden="true"
+          >
+            {icon}
+          </svg>
+        </span>
+        <span className="text-base font-semibold text-text-secondary">
+          {label}
+        </span>
+      </div>
+
+      <p className="sr-only">
+        {label}: {freeSpots} חניות פנויות מתוך {totalSpots} מקומות
+      </p>
+
+      <div
+        dir="ltr"
+        aria-hidden="true"
+        className="mt-4 flex items-baseline justify-end gap-1.5"
+      >
+        <span className="text-4xl font-bold tabular-nums tracking-tight text-text-primary sm:text-5xl">
+          {freeSpots}
+        </span>
+        <span className="text-2xl font-semibold tabular-nums text-border-strong sm:text-3xl">
+          /
+        </span>
+        <span className="text-2xl font-semibold tabular-nums text-text-muted sm:text-3xl">
+          {totalSpots}
+        </span>
+      </div>
+
+      <div
+        dir="ltr"
+        aria-hidden="true"
+        className="mt-1 flex items-center justify-end gap-1.5 text-xs font-medium text-text-muted sm:text-sm"
+      >
+        <span>פנויות</span>
+        <span className="text-border-strong">/</span>
+        <span>סה״כ</span>
+      </div>
+
+      <div
+        className="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-surface-muted"
+        aria-hidden="true"
+      >
+        <div
+          className={`h-full w-full origin-right rounded-full transition-transform duration-300 ease-out ${tones.bar}`}
+          style={{ transform: `scaleX(${freeRatio})` }}
+        />
+      </div>
+    </div>
+  );
+}
