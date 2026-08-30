@@ -1,19 +1,23 @@
 import { getIO } from '../sockets/socket.js';
-import { countByTypeAggregate } from './lotView.js';
+import { countByTypeAggregate, mapSpot } from './lotView.js';
 import ParkingSpot from '../models/ParkingSpot.js';
 
 const emitAvailability = async (io, lotId, changedFloor) => {
     const lotCounts = await countByTypeAggregate({ parkingLot: lotId });
+    const allSpots = await ParkingSpot.find({ parkingLot: lotId });
     io.to(`lot:${lotId}`).emit('lotAvailability', {
         parkingLot: lotId,
-        spotsByType: lotCounts
+        spotsByType: lotCounts,
+        spots: allSpots.map(mapSpot)
     });
 
     const floorCounts = await countByTypeAggregate({ parkingLot: lotId, floor: changedFloor });
+    const floorSpots = await ParkingSpot.find({ parkingLot: lotId, floor: changedFloor });
     io.to(`lot:${lotId}:floor:${changedFloor}`).emit('floorAvailability', {
         parkingLot: lotId,
         floor: changedFloor,
-        spotsByType: floorCounts
+        spotsByType: floorCounts,
+        spots: floorSpots.map(mapSpot)
     });
 };
 
