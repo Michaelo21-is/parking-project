@@ -95,7 +95,7 @@ export default function App() {
           const state = await getStateByCoordinates(latitude, longitude);
 
           const responseData = await loadParkingByState(state);
-
+          console.log("parkings details," , responseData);
           setVisibleParkDetails(responseData);
           setParkDeatils(responseData);
         } catch (e) {
