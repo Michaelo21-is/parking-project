@@ -3,6 +3,7 @@ import City from '../models/City.js';
 import ParkingLot from '../models/ParkingLot.js';
 import ParkingSpot from '../models/ParkingSpot.js';
 import { protect } from '../middleware/auth.js';
+import { buildLotView } from '../services/lotView.js';
 
 const router = express.Router();
 
@@ -23,14 +24,16 @@ router.get('/', async (req, res) => {
     res.json(lots);
 });
 
-// READ — single lot by id
+// READ — single lot by id, with its spots and per-type free/total breakdown
+// (shares its response shape with GET /parking/lot). Pass ?floor= to scope
+// spots/spotsByType to one floor.
 router.get('/:id', async (req, res) => {
     try {
-        const lot = await ParkingLot.findById(req.params.id).populate('city', 'name district');
+        const lot = await ParkingLot.findById(req.params.id);
         if (!lot) {
             return res.status(404).json({ error: "Parking lot not found" });
         }
-        res.json(lot);
+        res.json(await buildLotView(lot, req.query.floor));
     } catch (error) {
         res.status(400).json({ error: "Invalid lot id" });
     }

@@ -2,6 +2,7 @@ import express from 'express';
 import City from '../models/City.js';
 import ParkingLot from '../models/ParkingLot.js';
 import ParkingSpot from '../models/ParkingSpot.js';
+import { buildLotView } from '../services/lotView.js';
 
 const router = express.Router();
 
@@ -12,7 +13,21 @@ const mapSpot = spot => ({
     type: spot.type
 });
 
-// Search by district -> cities in that district, each mapped to its parking lot names
+// City name autocomplete for the home page search box
+router.get('/cities/autocomplete', async (req, res) => {
+    const query = req.query.q;
+    if (!query) {
+        return res.json([]);
+    }
+
+    const cities = await City.find({ name: new RegExp(query, 'i') })
+        .select('name')
+        .limit(10);
+
+    res.json(cities.map(city => ({ id: city._id, name: city.name })));
+});
+
+// Search by district -> cities in that district, each mapped to its parking lots
 router.get('/district', async (req, res) => {
     const district = req.query.name;
     if (!district) {
@@ -23,7 +38,7 @@ router.get('/district', async (req, res) => {
     const result = {};
     await Promise.all(cities.map(async city => {
         const lots = await ParkingLot.find({ city: city._id }).select('name');
-        result[city.name] = lots.map(lot => lot.name);
+        result[city.name] = lots.map(lot => ({ lotId: lot._id, name: lot.name }));
     }));
 
     res.json(result);
@@ -93,9 +108,10 @@ router.get('/city', async (req, res) => {
     res.json(responseData);
 });
 
-// Single parking lot (with spots) within a city
+// Single parking lot (with spots and per-type free/total breakdown) within a city.
+// Pass ?floor= to scope spots/spotsByType to that floor.
 router.get('/lot', async (req, res) => {
-    const { cityName, lotName } = req.query;
+    const { cityName, lotName, floor } = req.query;
     if (!cityName || !lotName) {
         return res.status(400).json({ error: "Missing 'cityName' or 'lotName' query parameters" });
     }
@@ -110,13 +126,7 @@ router.get('/lot', async (req, res) => {
         return res.status(404).json({ error: "Parking lot not found in the specified city" });
     }
 
-    const spots = await ParkingSpot.find({ parkingLot: parkingLot._id });
-    res.json({
-        parkingName: parkingLot.name,
-        address: parkingLot.address,
-        spotCount: parkingLot.spotCount,
-        spots: spots.map(mapSpot)
-    });
+    res.json(await buildLotView(parkingLot, floor));
 });
 
 export default router;
