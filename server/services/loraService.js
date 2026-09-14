@@ -25,7 +25,9 @@ export const processData = async (data) => {
     }
 
     spot.status = data.status;
-    if (data.status === 'free') {
+    if (data.status === 'occupied') {
+        spot.parkedCar = data.carPlate ?? null;
+    } else {
         spot.parkedCar = null;
     }
     await spot.save();
