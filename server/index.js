@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import express from 'express';
+import http from 'http';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import connectDB from './config/db.js';
@@ -7,6 +8,8 @@ import authRoutes from './routes/authRoutes.js';
 import parkingRoutes from './routes/parkingRoutes.js';
 import lotRoutes from './routes/lotRoutes.js';
 import loraRoutes from './routes/loraRoutes.js';
+import { initSocket } from './sockets/socket.js';
+import { watchParkingSpots } from './services/spotWatcher.js';
 
 await connectDB();
 
@@ -25,6 +28,10 @@ app.get('/api/test', (req, res) => {
     res.send('Hello Smart Parking');
 });
 
-app.listen(port, () => {
+const httpServer = http.createServer(app);
+initSocket(httpServer);
+watchParkingSpots();
+
+httpServer.listen(port, () => {
     console.log(`Server is running on http://localhost:${port}`);
 });

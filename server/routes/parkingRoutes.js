@@ -2,15 +2,9 @@ import express from 'express';
 import City from '../models/City.js';
 import ParkingLot from '../models/ParkingLot.js';
 import ParkingSpot from '../models/ParkingSpot.js';
+import { buildLotView, countByTypeAggregate } from '../services/lotView.js';
 
 const router = express.Router();
-
-const mapSpot = spot => ({
-    spot: spot.spotNumber,
-    floor: spot.floor,
-    status: spot.status,
-    type: spot.type
-});
 
 // Search by district -> cities in that district, each mapped to its parking lot names
 router.get('/district', async (req, res) => {
@@ -23,7 +17,7 @@ router.get('/district', async (req, res) => {
     const result = {};
     await Promise.all(cities.map(async city => {
         const lots = await ParkingLot.find({ city: city._id }).select('name');
-        result[city.name] = lots.map(lot => lot.name);
+        result[city.name] = lots.map(lot => ({ lotId: lot._id, name: lot.name }));
     }));
 
     res.json(result);
@@ -53,18 +47,40 @@ router.get('/search', async (req, res) => {
     }
 
     const results = await Promise.all(lots.map(async lot => {
-        const spots = await ParkingSpot.find({ parkingLot: lot._id, ...spotFilter });
+        const matchedSpotCount = await ParkingSpot.countDocuments({ parkingLot: lot._id, ...spotFilter });
+        const freeSpotCount = await ParkingSpot.countDocuments({ parkingLot: lot._id, ...spotFilter, status: 'free' });
+        const spotsByType = await countByTypeAggregate({ parkingLot: lot._id, ...spotFilter });
         return {
+            lotId: lot._id,
             city: lot.city?.name,
             parkingName: lot.name,
             address: lot.address,
-            spotCount: lot.spotCount,
-            spots: spots.map(mapSpot)
+            totalSpots: lot.spotCount,
+            freeSpotCount,
+            spotsByType,
+            matchedSpotCount
         };
     }));
 
-    const filtered = floor !== undefined ? results.filter(r => r.spots.length > 0) : results;
-    res.json(filtered);
+    const filtered = floor !== undefined ? results.filter(r => r.matchedSpotCount > 0) : results;
+    res.json(filtered.map(({ matchedSpotCount, ...rest }) => rest));
+});
+
+// Autocomplete city names by prefix
+router.get('/cities/autocomplete', async (req, res) => {
+    const q = req.query.q;
+    if (typeof q !== 'string' || q.trim().length < 2) {
+        return res.json([]);
+    }
+
+    try {
+        const escaped = q.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const prefixRegex = new RegExp('^' + escaped, 'i');
+        const cities = await City.find({ name: prefixRegex }).select('name').limit(10);
+        res.json(cities.map(city => ({ id: city._id, name: city.name })));
+    } catch (err) {
+        res.status(500).json({ error: 'Internal server error' });
+    }
 });
 
 // Search by city
@@ -81,21 +97,27 @@ router.get('/city', async (req, res) => {
 
     const lots = await ParkingLot.find({ city: city._id });
     const responseData = await Promise.all(lots.map(async lot => {
-        const spots = await ParkingSpot.find({ parkingLot: lot._id });
+        const freeSpotCount = await ParkingSpot.countDocuments({ parkingLot: lot._id, status: 'free' });
+        const spotsByType = await countByTypeAggregate({ parkingLot: lot._id });
         return {
+            lotId: lot._id,
+            city: city.name,
             parkingName: lot.name,
             address: lot.address,
-            spotCount: lot.spotCount,
-            spots: spots.map(mapSpot)
+            totalSpots: lot.spotCount,
+            freeSpotCount,
+            spotsByType
         };
     }));
 
     res.json(responseData);
 });
 
-// Single parking lot (with spots) within a city
+// Single parking lot within a city. Without 'floor', spots/spotsByType cover the
+// whole lot. With 'floor', they're scoped to that floor. Same response shape
+// either way — see services/lotView.js.
 router.get('/lot', async (req, res) => {
-    const { cityName, lotName } = req.query;
+    const { cityName, lotName, floor } = req.query;
     if (!cityName || !lotName) {
         return res.status(400).json({ error: "Missing 'cityName' or 'lotName' query parameters" });
     }
@@ -110,13 +132,8 @@ router.get('/lot', async (req, res) => {
         return res.status(404).json({ error: "Parking lot not found in the specified city" });
     }
 
-    const spots = await ParkingSpot.find({ parkingLot: parkingLot._id });
-    res.json({
-        parkingName: parkingLot.name,
-        address: parkingLot.address,
-        spotCount: parkingLot.spotCount,
-        spots: spots.map(mapSpot)
-    });
+    const floorNum = floor === undefined || floor === null || floor === '' ? undefined : Number(floor);
+    res.json(await buildLotView(parkingLot, { floor: floorNum, cityName: city.name }));
 });
 
 export default router;
