@@ -14,7 +14,18 @@ export default function Login(){
         e.preventDefault();
         setLoading(true);
         try{
-            await loginRequest(form);
+            const userInfo = await loginRequest(form);
+            console.log("userInfo: ", userInfo)
+            const userDetails = {
+              role: userInfo.user.role,
+              cityId: userInfo.user.city,
+              cityName: userInfo.user.cityName,
+            };
+
+            localStorage.setItem(
+              "userInfo",
+              JSON.stringify(userDetails)
+            );
             navigate("/management");
         }
         catch(e){

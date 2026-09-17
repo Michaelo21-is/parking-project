@@ -63,8 +63,10 @@ export default function EditParkingPage(){
 
     useEffect(() =>{
         const response = extractUserDeatils();
-        if(response.role !== "worker" && response.role !== "admin"){
-            navigate("/login");
+        console.log("user info" ,  response);
+        if ( response === null || (response.role !== "worker" && response.role !== "admin")) {
+        navigate("/login");
+        return;
         }
         setCityName(response.cityName);
         loadCityDeatils(response.cityName);
