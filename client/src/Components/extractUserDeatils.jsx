@@ -1,22 +1,15 @@
 export default function extractUserDeatils() {
-  const getCookie = (name) => {
-    const match = document.cookie.match(
-      new RegExp("(^| )" + name + "=([^;]+)")
-    );
-
-    return match ? match[2] : null;
-  };
-
-  const userInfo = getCookie("userInfo");
+  const userInfo = localStorage.getItem("userInfo");
 
   if (!userInfo) {
     return null;
   }
 
   try {
-    return JSON.parse(decodeURIComponent(userInfo));
+    return JSON.parse(userInfo);
   } catch (error) {
-    console.error("Failed to parse userInfo cookie:", error);
+    console.error("Failed to parse userInfo from localStorage:", error);
+    localStorage.removeItem("userInfo");
     return null;
   }
 }

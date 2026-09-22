@@ -13,4 +13,5 @@ export async function loginRequest(form) {
       withCredentials: true,
     }
   );
+  return response.data;
 }
