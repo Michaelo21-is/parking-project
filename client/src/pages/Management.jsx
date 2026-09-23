@@ -102,6 +102,7 @@ export default function ManagementPage() {
 
   async function handleOnSignOut(){
     try {
+      localStorage.removeItem("userInfo");
       await signOutRequest();
       navigate("/");
     } catch (error) {
