@@ -31,7 +31,7 @@ const sendAuth = async (res, user, status) => {
         httpOnly: false
     });
     res.status(status).json({
-        user: { id: user._id, fullName: user.fullName, email: user.email, city: user.city, role: user.role }
+        user: { id: user._id, fullName: user.fullName, email: user.email, city: user.city, cityName: city?.name ?? null, role: user.role }
     });
 };
 
