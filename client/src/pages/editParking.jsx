@@ -5,6 +5,7 @@ import { useToast } from "../Components/Toast/ToastContext";
 import { getParkingByCity } from "../api/LoadParkingByCityApi";
 import Popup from "../Components/Popup/Popup";
 import editPark from "../api/editPark";
+import MangementNavbar from "../Components/MangementNavbar";
 
 const parkingIcon = (
     <path
@@ -122,48 +123,7 @@ export default function EditParkingPage(){
     return (
         <div dir="rtl" className="flex min-h-dvh flex-col bg-canvas">
 
-            <header className="sticky top-0 z-20 border-b border-border bg-surface/85 backdrop-blur-sm">
-                <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
-                    <Link
-                        to="/"
-                        className="flex items-center gap-2 text-sm font-semibold text-text-primary sm:text-base"
-                    >
-                        <span className="flex h-9 w-9 items-center justify-center rounded-control bg-primary-50 text-primary">
-                            <svg
-                                className="h-5 w-5"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                                aria-hidden="true"
-                            >
-                                {parkingIcon}
-                            </svg>
-                        </span>
-                        חניה טק
-                    </Link>
-
-                    <Link
-                        to="/management"
-                        className="inline-flex h-11 cursor-pointer items-center gap-2 rounded-control border border-border bg-surface px-4 text-sm font-semibold text-text-primary shadow-card transition-all duration-200 hover:border-primary hover:text-primary hover:shadow-card-hover"
-                    >
-                        <svg
-                            className="h-4.5 w-4.5"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                            aria-hidden="true"
-                        >
-                            <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={1.5}
-                                d="M9 5l7 7-7 7"
-                            />
-                        </svg>
-                        חזרה לפאנל
-                    </Link>
-                </div>
-            </header>
+            <MangementNavbar />
 
             <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8 sm:px-6 sm:py-12">
                 <div className="animate-fade-in">

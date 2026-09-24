@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router"
+import { useNavigate } from "react-router"
 import extractUserDeatils from "../Components/extractUserDeatils";
 import addParking from "../api/addParking";
 import { useToast } from "../Components/Toast/ToastContext";
+import MangementNavbar from "../Components/MangementNavbar";
 
 export default function AddPark() {
   const [parkingForm, setParkingForm] = useState({
@@ -18,12 +19,14 @@ export default function AddPark() {
     const response = extractUserDeatils();
     if(response === null){
       navigate("/login");
+      return;
     }
     if(response.role !== "admin"){
       toast.error("אין לך הרשאה לדף זה", {
         description: "רק מנהל יכול להוסיף חניון חדש למערכת",
       });
       navigate("/login")
+      return;
     }
     setParkingForm((prev) => ({
       ...prev,
@@ -61,50 +64,7 @@ export default function AddPark() {
   return (
     <div dir="rtl" className="flex min-h-dvh flex-col bg-canvas">
 
-      <header className="sticky top-0 z-20 border-b border-border bg-surface/85 backdrop-blur-sm">
-        <div className="mx-auto flex w-full max-w-5xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
-          <span className="flex items-center gap-2 text-sm font-semibold text-text-primary sm:text-base">
-            <span className="flex h-9 w-9 items-center justify-center rounded-control bg-primary-50 text-primary">
-              <svg
-                className="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                aria-hidden="true"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 11h2.5a2.5 2.5 0 000-5H12v11M4 5.5A2.5 2.5 0 016.5 3h11A2.5 2.5 0 0120 5.5v13a2.5 2.5 0 01-2.5 2.5h-11A2.5 2.5 0 014 18.5v-13z"
-                />
-              </svg>
-            </span>
-            חניה טק
-          </span>
-
-          <Link
-            className="inline-flex h-11 cursor-pointer items-center gap-2 rounded-control border border-border bg-surface px-4 text-sm font-semibold text-text-primary shadow-card transition-all duration-200 hover:border-primary hover:text-primary hover:shadow-card-hover"
-            to = "/add-user"
-          >
-            <svg
-              className="h-4.5 w-4.5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              aria-hidden="true"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"
-              />
-            </svg>
-            הוספת משתמש
-          </Link>
-        </div>
-      </header>
+      <MangementNavbar />
 
       <main className="flex flex-1 items-start justify-center px-4 py-8 sm:px-6 sm:py-12">
         <div className="w-full max-w-lg animate-fade-in rounded-card border border-border bg-surface p-6 shadow-card sm:p-8">
