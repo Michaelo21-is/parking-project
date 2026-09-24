@@ -16,8 +16,8 @@ const signToken = (user) =>
 const sendAuth = async (res, user, status) => {
     const token = signToken(user);
     const cookieOpts = {
-        sameSite: 'lax',
-        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'none',
+        secure: true,
         maxAge: 7 * 24 * 60 * 60 * 1000
     };
     const city = await City.findById(user.city).select('name');
@@ -72,8 +72,9 @@ router.post('/signup', protect, authorize('admin'), async (req, res) => {
 });
 
 router.post('/logout', (req, res) => {
-    res.clearCookie('token');
-    res.clearCookie('userInfo');
+    const clearOpts = { sameSite: 'none', secure: true };
+    res.clearCookie('token', clearOpts);
+    res.clearCookie('userInfo', clearOpts);
     res.json({ message: "Logged out" });
 });
 
