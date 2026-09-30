@@ -1,12 +1,19 @@
 export default function extractUserDeatils() {
-  const userInfo = localStorage.getItem("userInfo");
+  const storedUserInfo = localStorage.getItem("userInfo");
 
-  if (!userInfo) {
+  if (!storedUserInfo) {
     return null;
   }
 
   try {
-    return JSON.parse(userInfo);
+    const userInfo = JSON.parse(storedUserInfo);
+
+    if (Date.now() >= userInfo.expiresAt) {
+      localStorage.removeItem("userInfo");
+      return null;
+    }
+
+    return userInfo;
   } catch (error) {
     console.error("Failed to parse userInfo from localStorage:", error);
     localStorage.removeItem("userInfo");

@@ -20,6 +20,7 @@ export default function Login(){
               role: userInfo.user.role,
               cityId: userInfo.user.city,
               cityName: userInfo.user.cityName,
+              expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000, // 1 week 
             };
 
             localStorage.setItem(
